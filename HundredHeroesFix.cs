@@ -66,7 +66,7 @@ namespace HundredHeroesFix
 
             // Features
             bSkipIntroLogos = Config.Bind("Intro Skip",
-                                "Skip logos",
+                                "SkipLogos",
                                 true,
                                 "Skips intro logos.");
 
@@ -153,6 +153,7 @@ namespace HundredHeroesFix
             [HarmonyPrefix]
             public static bool FixAspectRatio(CameraViewPortFitting __instance)
             {
+                // There's possibly a better way of doing this.
                 return false;
             }
 
@@ -175,16 +176,18 @@ namespace HundredHeroesFix
                 }
             }
 
-            [HarmonyPatch(typeof(SaveLoadFileWindow), nameof(SaveLoadFileWindow.CreateItems))]
+            [HarmonyPatch(typeof(CanvasScaler), nameof(CanvasScaler.OnEnable))]
             [HarmonyPostfix]
-            public static void LoadScreenFix(SaveLoadFileWindow __instance)
+            public static void LoadScreenFix(CanvasScaler __instance)
             {
                 if (fAspectRatio > fNativeAspect)
                 {
-                    var canvScaler = __instance.gameObject.transform.parent.gameObject.GetComponent<CanvasScaler>();
-                    canvScaler.referenceResolution = new Vector2(1920f, 1080f);
-                    canvScaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
-                    Log.LogInfo($"Fixed save load screen");
+                    if (__instance != null && __instance.referenceResolution == new Vector2(1920f, 600f))
+                    {
+                        __instance.referenceResolution = new Vector2(1920f, 1080f);
+                        __instance.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
+                        Log.LogInfo($"Fixed broken screen {__instance.transform.parent.gameObject.name}.");
+                    }
                 }
             }
 
