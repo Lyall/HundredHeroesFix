@@ -102,7 +102,7 @@ namespace HundredHeroesFix
             }
 
             // Apply patches
-            if (bSkipIntroLogos.Value || bSkipIntroMovie.Value)
+            if (bSkipIntroLogos.Value)
             {
                 Harmony.CreateAndPatchAll(typeof(SkipIntroPatch));
             }
@@ -164,9 +164,14 @@ namespace HundredHeroesFix
                 {
                     if (__instance.gameObject.transform.localPosition.x == 0)
                     {
-                        float fWidthOffset = (float)(iCustomResX.Value - (1080 * fAspectRatio)) / 2;
-                        //__instance.gameObject.transform.AddLocalPositionX(fWidthOffset);
+                        float fWidthOffset = (float)((1080 * fAspectRatio) - 1920) / 2;
+                        __instance.gameObject.transform.AddLocalPositionX(fWidthOffset);
                     }
+
+                    // Span background elements
+                    __instance.transform.GetChild(0).localScale = new Vector3(1f * fAspectMultiplier, 1f, 1f);
+                    __instance.transform.GetChild(1).localScale = new Vector3(1f * fAspectMultiplier, 1f, 1f);
+                    __instance.transform.GetChild(2).localScale = new Vector3(1f * fAspectMultiplier, 1f, 1f);
                 }
             }
 
