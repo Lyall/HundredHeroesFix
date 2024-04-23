@@ -137,7 +137,7 @@ namespace HundredHeroesFix
         [HarmonyPatch]
         public class ResolutionPatch
         {
-            // Resolution
+            // Apply resolution
             [HarmonyPatch(typeof(UnityEngine.Screen), nameof(UnityEngine.Screen.SetResolution), [typeof(int), typeof(int), typeof(bool)])]
             [HarmonyPrefix]
             public static bool ApplyResolution(Screen __instance, ref int __0, ref int __1, ref bool __2)
@@ -149,6 +149,7 @@ namespace HundredHeroesFix
                 return true;
             }
 
+            // Disable camera viewport from being adjusted
             [HarmonyPatch(typeof(CameraViewPortFitting), nameof(CameraViewPortFitting.AdjustCameraViewport))]
             [HarmonyPrefix]
             public static bool FixAspectRatio(CameraViewPortFitting __instance)
@@ -157,6 +158,7 @@ namespace HundredHeroesFix
                 return false;
             }
 
+            // Offset and span the add unit screen
             [HarmonyPatch(typeof(AddUnit), nameof(AddUnit.Show))]
             [HarmonyPostfix]
             public static void AddUnitPos(AddUnit __instance)
@@ -176,6 +178,7 @@ namespace HundredHeroesFix
                 }
             }
 
+            // Fix broken screens that are zoomed in
             [HarmonyPatch(typeof(CanvasScaler), nameof(CanvasScaler.OnEnable))]
             [HarmonyPostfix]
             public static void LoadScreenFix(CanvasScaler __instance)
@@ -191,6 +194,7 @@ namespace HundredHeroesFix
                 }
             }
 
+            // Span screen fades
             [HarmonyPatch(typeof(Framework.FadeOrganizer), nameof(Framework.FadeOrganizer.Start))]
             [HarmonyPostfix]
             public static void FadeFix(Framework.FadeOrganizer __instance)
@@ -206,6 +210,7 @@ namespace HundredHeroesFix
                 }
             }
 
+            // Adjust vignette
             [HarmonyPatch(typeof(UnityEngine.Rendering.Volume), nameof(UnityEngine.Rendering.Volume.OnEnable))]
             [HarmonyPostfix]
             public static void VignetteFix(UnityEngine.Rendering.Volume __instance)
