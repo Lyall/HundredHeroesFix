@@ -3,16 +3,14 @@ using BepInEx.Unity.IL2CPP;
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
-
-
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
-
 using FieldStage.UI;
 using UnityEngine.UI;
 using Common.UI;
 using Kaeru.UI;
 using GameData;
+using System;
 
 namespace HundredHeroesFix
 {
@@ -178,7 +176,7 @@ namespace HundredHeroesFix
         public class ResolutionPatch
         {
             // Apply resolution
-            [HarmonyPatch(typeof(Screen), nameof(Screen.SetResolution), [typeof(int), typeof(int), typeof(bool)])]
+            [HarmonyPatch(typeof(Screen), nameof(Screen.SetResolution), new Type[] { typeof(int), typeof(int), typeof(bool) })]
             [HarmonyPrefix]
             public static bool ApplyResolution(Screen __instance, ref int __0, ref int __1, ref bool __2)
             {
