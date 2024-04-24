@@ -13,6 +13,7 @@ using Il2CppSystem.Security.Cryptography;
 using Common.UI;
 using FieldStage.UI.Map;
 using Kaeru.UI;
+using GameData;
 
 namespace HundredHeroesFix
 {
@@ -34,7 +35,7 @@ namespace HundredHeroesFix
         // Aspect Ratio
         public static float fAspectRatio;
         public static float fAspectMultiplier;
-        public static float fNativeAspect = (float)16/9;
+        public static float fNativeAspect = (float)16 / 9;
         public static float fNativeWidth;
         public static float fNativeHeight;
         public static float fHUDWidth;
@@ -59,10 +60,10 @@ namespace HundredHeroesFix
                                 Display.main.systemWidth,
                                 "Set desired resolution width.");
 
-           iCustomResY = Config.Bind("Set Custom Resolution",
-                                "ResolutionHeight",
-                                Display.main.systemHeight,
-                                "Set desired resolution height.");
+            iCustomResY = Config.Bind("Set Custom Resolution",
+                                 "ResolutionHeight",
+                                 Display.main.systemHeight,
+                                 "Set desired resolution height.");
 
             bFullscreen = Config.Bind("Set Custom Resolution",
                                 "Fullscreen",
@@ -119,6 +120,7 @@ namespace HundredHeroesFix
             {
                 Harmony.CreateAndPatchAll(typeof(ControllerGlyphPatch));
             }
+            Harmony.CreateAndPatchAll(typeof(GraphicsTweakPatch));
         }
 
         [HarmonyPatch]
@@ -300,6 +302,25 @@ namespace HundredHeroesFix
                 };
 
                 __instance._deviceType = controllerStyle;
+            }
+        }
+
+        [HarmonyPatch]
+        public class GraphicsTweakPatch
+        {
+            [HarmonyPatch(typeof(DisplaySetting), nameof(DisplaySetting.UpdateShadowOption))]
+            [HarmonyPostfix]
+            public static void GraphicalTweaks()
+            {
+                Log.LogInfo($"Applying graphical tweaks");
+                var URPAsset = UniversalRenderPipeline.asset;
+                if (URPAsset != null)
+                {
+                    URPAsset.renderScale = 1.5f;
+                    URPAsset.shadowDistance = 300f; // 150f high
+                    URPAsset.m_MainLightShadowmapResolution = UnityEngine.Rendering.Universal.ShadowResolution._4096; // 1024 high
+                }
+
             }
         }
     }
