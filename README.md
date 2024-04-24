@@ -22,7 +22,7 @@ This is a BepInEx plugin for Eiyuden Chronicle: Hundred Heroes that adds custom 
 - Open up the game properties in Steam and add `WINEDLLOVERRIDES="winhttp=n,b" %command%` to the launch options.
 
 ## Configuration
-- See **HundredHeroesFix.ini** to adjust settings for the fix.
+- See **<GameFolder>\BepInEx\config\HundredHeroesFix.cfg** to adjust settings for the fix.
 
 ## Known Issues
 Please report any issues you see.
