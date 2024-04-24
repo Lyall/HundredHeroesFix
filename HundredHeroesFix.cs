@@ -10,6 +10,9 @@ using FieldStage.UI;
 using UnityEngine.UI;
 using System.Linq;
 using Il2CppSystem.Security.Cryptography;
+using Common.UI;
+using FieldStage.UI.Map;
+using Kaeru.UI;
 
 namespace HundredHeroesFix
 {
@@ -238,7 +241,7 @@ namespace HundredHeroesFix
                     if (__instance.gameObject.name == "filter" || __instance.gameObject.name == "Filter" || __instance.gameObject.name == "blackSheet" || __instance.gameObject.name == "bgWhite")
                     {
                         var transform = __instance.gameObject.GetComponent<RectTransform>();
-                        if (transform.sizeDelta == new Vector2(1920f, 1080f))
+                        if (transform.sizeDelta == new Vector2(1920f, 1080f) || transform.sizeDelta == new Vector2(2000f, 1200f))
                         {
                             transform.sizeDelta = new Vector2(1080f * fAspectRatio, 1080f);
                             Log.LogInfo($"Adjusted the size of {__instance.gameObject.transform.parent.gameObject.name}->{__instance.gameObject.name}");
@@ -247,18 +250,34 @@ namespace HundredHeroesFix
                 }
             }
 
-            // Span menu background
-            [HarmonyPatch(typeof(MainMenu), nameof(MainMenu.Initialize))]
+            // Span background blur
+            [HarmonyPatch(typeof(UIBackgroundBlur), nameof(UIBackgroundBlur.OnEnable))]
             [HarmonyPostfix]
-            public static void MainMenuBackground(MainMenu __instance)
+            public static void MapBackground(UIBackgroundBlur __instance)
             {
                 if (fAspectRatio > fNativeAspect)
                 {
-                  if (__instance._blackSheet != null)
+                    var transform = __instance.GetComponent<RectTransform>();
+                    if (transform.sizeDelta == new Vector2(1920f, 1080f))
                     {
-                        var transform = __instance._blackSheet.GetComponent<RectTransform>();
                         transform.sizeDelta = new Vector2(1080f * fAspectRatio, 1080f);
-                        Log.LogInfo($"Adjusted the size of main menu background");
+                        Log.LogInfo($"Adjusted the size of background blur");
+                    }
+                }
+            }
+
+            // Span tutorial background
+            [HarmonyPatch(typeof(Tutorial), nameof(Tutorial.RefleshPage))]
+            [HarmonyPostfix]
+            public static void TutorialBackground(Tutorial __instance)
+            {
+                if (fAspectRatio > fNativeAspect)
+                {
+                    if (__instance.gameObject.transform.GetChild(0) != null)
+                    {
+                        var transform = __instance.gameObject.transform.GetChild(0).GetComponent<RectTransform>();
+                        transform.sizeDelta = new Vector2(10000f, 10000f); // This one is already 3000x3000 so it's basically a giant square.
+                        Log.LogInfo($"Adjusted the size of tutorial background");
                     }
                 }
             }
