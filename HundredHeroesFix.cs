@@ -27,6 +27,7 @@ namespace HundredHeroesFix
 
         // Features
         public static ConfigEntry<bool> bSkipIntroLogos;
+        public static ConfigEntry<bool> bDisableCursor;
         public static ConfigEntry<bool> bControllerGlyphs;
         public static ConfigEntry<int> iControllerStyle;
 
@@ -79,6 +80,11 @@ namespace HundredHeroesFix
                                 "SkipLogos",
                                 true,
                                 "Skips intro logos.");
+
+            bDisableCursor = Config.Bind("Disable Cursor",
+                               "Enabled",
+                               true,
+                               "Set to true to disable showing the mouse cursor.");
 
             bControllerGlyphs = Config.Bind("Force Controller Icons",
                                 "Enabled",
@@ -151,6 +157,11 @@ namespace HundredHeroesFix
             if (bGraphicalTweaks.Value)
             {
                 Harmony.CreateAndPatchAll(typeof(GraphicsTweakPatch));
+            }
+            if (bDisableCursor.Value)
+            {
+                Cursor.visible = false;
+                Log.LogInfo($"Disabled mouse cursor visibility.");
             }
         }
 
