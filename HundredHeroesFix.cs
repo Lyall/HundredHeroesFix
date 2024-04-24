@@ -32,6 +32,12 @@ namespace HundredHeroesFix
         public static ConfigEntry<bool> bSkipIntroLogos;
         public static ConfigEntry<bool> bControllerGlyphs;
         public static ConfigEntry<int> iControllerStyle;
+
+        // Graphical Tweaks
+        public static ConfigEntry<float> fRenderScale;
+        public static ConfigEntry<float> fShadowDistance;
+        public static ConfigEntry<int> iShadowResolution;
+
         // Aspect Ratio
         public static float fAspectRatio;
         public static float fAspectMultiplier;
@@ -84,9 +90,28 @@ namespace HundredHeroesFix
 
             iControllerStyle = Config.Bind("Force Controller Icons",
                                 "IconStyle",
-                                 (int)1,
+                                (int)1,
                                 new ConfigDescription("Set controller icon style. 1 = Dualshock (DS4), 2 = DualSense (DS5), 3 = Xbox",
                                 new AcceptableValueRange<int>(1, 3)));
+
+            // Graphical Tweaks
+            fRenderScale = Config.Bind("Graphical Tweaks",
+                                "RenderScale",
+                                (float)1f,
+                                new ConfigDescription("Set Render Scale. Higher than 1 downsamples and lower than 1 upsamples.",
+                                new AcceptableValueRange<float>(0.5f, 4f)));
+
+            fShadowDistance = Config.Bind("Graphical Tweaks",
+                                "ShadowDistance",
+                                (float)150f,
+                                new ConfigDescription("Set distance of shadow rendering. Default High = 150",
+                                new AcceptableValueRange<float>(15f, 500f)));
+
+            iShadowResolution = Config.Bind("Graphical Tweaks",
+                                "ShadowResolution",
+                                (int)3,
+                                new ConfigDescription("Set shadow resolution. 1 = 256, 2 = 512, 3 = 1024, 4 = 2048, 5 = 4096",
+                                new AcceptableValueRange<int>(1, 5)));
 
             // Calculate aspect ratio
             fAspectRatio = (float)iCustomResX.Value / iCustomResY.Value;
@@ -316,9 +341,19 @@ namespace HundredHeroesFix
                 var URPAsset = UniversalRenderPipeline.asset;
                 if (URPAsset != null)
                 {
-                    URPAsset.renderScale = 1.5f;
-                    URPAsset.shadowDistance = 300f; // 150f high
-                    URPAsset.m_MainLightShadowmapResolution = UnityEngine.Rendering.Universal.ShadowResolution._4096; // 1024 high
+                    URPAsset.renderScale = fRenderScale.Value;
+                    URPAsset.shadowDistance = fShadowDistance.Value; // 150f high
+
+                    var shadowRes = iShadowResolution.Value switch
+                    {
+                        1 => UnityEngine.Rendering.Universal.ShadowResolution._256,
+                        2 => UnityEngine.Rendering.Universal.ShadowResolution._512,
+                        3 => UnityEngine.Rendering.Universal.ShadowResolution._1024,
+                        4 => UnityEngine.Rendering.Universal.ShadowResolution._2048,
+                        5 => UnityEngine.Rendering.Universal.ShadowResolution._4096,
+                        _ => UnityEngine.Rendering.Universal.ShadowResolution._1024,
+                    };
+                    URPAsset.m_MainLightShadowmapResolution = shadowRes; // 1024 high
                 }
 
             }
