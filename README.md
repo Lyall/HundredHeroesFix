@@ -36,4 +36,4 @@ This list will contain bugs which may or may not be fixed.
 | Gameplay |
 
 ## Credits
-[BepinEx](https://github.com/BepInEx/BepInEx)
+[BepinEx](https://github.com/BepInEx/BepInEx) for plugin loading.
