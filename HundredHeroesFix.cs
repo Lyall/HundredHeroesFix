@@ -8,6 +8,8 @@ using UnityEngine;
 using UnityEngine.Rendering.Universal;
 using FieldStage.UI;
 using UnityEngine.UI;
+using System.Linq;
+using Il2CppSystem.Security.Cryptography;
 
 namespace HundredHeroesFix
 {
@@ -222,6 +224,41 @@ namespace HundredHeroesFix
                     {
                         vignette.intensity.value /= fAspectMultiplier;
                         Log.LogInfo($"Changed intestity of {__instance.gameObject.name}'s vignette to {vignette.intensity.value}");
+                    }
+                }
+            }
+
+            // Span several backgrounds
+            [HarmonyPatch(typeof(Image), nameof(Image.OnEnable))]
+            [HarmonyPostfix]
+            public static void FilterFix(Image __instance)
+            {
+                if (fAspectRatio > fNativeAspect)
+                {
+                    if (__instance.gameObject.name == "filter" || __instance.gameObject.name == "Filter" || __instance.gameObject.name == "blackSheet" || __instance.gameObject.name == "bgWhite")
+                    {
+                        var transform = __instance.gameObject.GetComponent<RectTransform>();
+                        if (transform.sizeDelta == new Vector2(1920f, 1080f))
+                        {
+                            transform.sizeDelta = new Vector2(1080f * fAspectRatio, 1080f);
+                            Log.LogInfo($"Adjusted the size of {__instance.gameObject.transform.parent.gameObject.name}->{__instance.gameObject.name}");
+                        }
+                    }
+                }
+            }
+
+            // Span menu background
+            [HarmonyPatch(typeof(MainMenu), nameof(MainMenu.Initialize))]
+            [HarmonyPostfix]
+            public static void MainMenuBackground(MainMenu __instance)
+            {
+                if (fAspectRatio > fNativeAspect)
+                {
+                  if (__instance._blackSheet != null)
+                    {
+                        var transform = __instance._blackSheet.GetComponent<RectTransform>();
+                        transform.sizeDelta = new Vector2(1080f * fAspectRatio, 1080f);
+                        Log.LogInfo($"Adjusted the size of main menu background");
                     }
                 }
             }
