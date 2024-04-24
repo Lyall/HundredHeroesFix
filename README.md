@@ -11,6 +11,7 @@ This is a BepInEx plugin for Eiyuden Chronicle: Hundred Heroes that adds custom 
 - Graphical tweaks.
   Render scale, shadow resolution and distance.
 - Force specific controller button icons (DS4/DS5/Xbox).
+- Disable mouse cursor.
 
 ## Installation
 - Grab the latest release of HundredHeroesFix from [here.](https://github.com/Lyall/HundredHeroesFix/releases)
