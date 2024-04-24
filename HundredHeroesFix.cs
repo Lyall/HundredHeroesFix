@@ -2,16 +2,15 @@
 using BepInEx.Unity.IL2CPP;
 using BepInEx.Configuration;
 using BepInEx.Logging;
-
 using HarmonyLib;
+
+
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
+
 using FieldStage.UI;
 using UnityEngine.UI;
-using System.Linq;
-using Il2CppSystem.Security.Cryptography;
 using Common.UI;
-using FieldStage.UI.Map;
 using Kaeru.UI;
 using GameData;
 
@@ -34,6 +33,7 @@ namespace HundredHeroesFix
         public static ConfigEntry<int> iControllerStyle;
 
         // Graphical Tweaks
+        public static ConfigEntry<bool> bGraphicalTweaks;
         public static ConfigEntry<float> fRenderScale;
         public static ConfigEntry<float> fShadowDistance;
         public static ConfigEntry<int> iShadowResolution;
@@ -95,6 +95,11 @@ namespace HundredHeroesFix
                                 new AcceptableValueRange<int>(1, 3)));
 
             // Graphical Tweaks
+            bGraphicalTweaks = Config.Bind("Graphical Tweaks",
+                                "Enabled",
+                                true,
+                                "Enables tweaking various graphical options.");
+
             fRenderScale = Config.Bind("Graphical Tweaks",
                                 "RenderScale",
                                 (float)1f,
@@ -145,7 +150,10 @@ namespace HundredHeroesFix
             {
                 Harmony.CreateAndPatchAll(typeof(ControllerGlyphPatch));
             }
-            Harmony.CreateAndPatchAll(typeof(GraphicsTweakPatch));
+            if (bGraphicalTweaks.Value)
+            {
+                Harmony.CreateAndPatchAll(typeof(GraphicsTweakPatch));
+            }
         }
 
         [HarmonyPatch]
@@ -305,6 +313,22 @@ namespace HundredHeroesFix
                         var transform = __instance.gameObject.transform.GetChild(0).GetComponent<RectTransform>();
                         transform.sizeDelta = new Vector2(10000f, 10000f); // This one is already 3000x3000 so it's basically a giant square.
                         Log.LogInfo($"Adjusted the size of tutorial background");
+                    }
+                }
+            }
+
+            // Span screen wipes
+            [HarmonyPatch(typeof(Transition.ScreenFadeSetting), nameof(Transition.ScreenFadeSetting.Play))]
+            [HarmonyPostfix]
+            public static void ScreenWipes(Transition.ScreenFadeSetting __instance)
+            {
+                if (fAspectRatio > fNativeAspect)
+                {
+                    if (__instance._fader != null)
+                    {
+                        var transform = __instance._fader.transform.parent.GetComponent<Transform>();
+                        transform.localScale = new Vector3(1.78f * fAspectMultiplier, 1.78f, 1.78f);
+                        Log.LogInfo($"Adjusted the size of screen transitions.");
                     }
                 }
             }
