@@ -178,7 +178,7 @@ namespace HundredHeroesFix
         public class ResolutionPatch
         {
             // Apply resolution
-            [HarmonyPatch(typeof(UnityEngine.Screen), nameof(UnityEngine.Screen.SetResolution), [typeof(int), typeof(int), typeof(bool)])]
+            [HarmonyPatch(typeof(Screen), nameof(Screen.SetResolution), [typeof(int), typeof(int), typeof(bool)])]
             [HarmonyPrefix]
             public static bool ApplyResolution(Screen __instance, ref int __0, ref int __1, ref bool __2)
             {
