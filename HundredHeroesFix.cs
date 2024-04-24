@@ -273,7 +273,7 @@ namespace HundredHeroesFix
             {
                 if (fAspectRatio > fNativeAspect)
                 {
-                    if (__instance.gameObject.name == "filter" || __instance.gameObject.name == "Filter" || __instance.gameObject.name == "blackSheet" || __instance.gameObject.name == "bgWhite")
+                    if (__instance.gameObject.name == "filter" || __instance.gameObject.name == "Filter" || __instance.gameObject.name == "blackSheet")
                     {
                         var transform = __instance.gameObject.GetComponent<RectTransform>();
                         if (transform.sizeDelta == new Vector2(1920f, 1080f) || transform.sizeDelta == new Vector2(2000f, 1200f))
