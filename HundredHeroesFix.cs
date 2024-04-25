@@ -112,7 +112,7 @@ namespace HundredHeroesFix
             // Graphical Tweaks
             bGraphicalTweaks = Config.Bind("Graphical Tweaks",
                                 "Enabled",
-                                true,
+                                false,
                                 "Enables tweaking various graphical options.");
 
             fRenderScale = Config.Bind("Graphical Tweaks",
