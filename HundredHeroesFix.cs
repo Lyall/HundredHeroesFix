@@ -244,10 +244,11 @@ namespace HundredHeroesFix
                 {
                     if (__instance._header != null && __instance._dialogRoot != null)
                     {
-                        __instance._dialogRoot.gameObject.GetComponent<RectTransform>().anchorMax = new Vector2(0.5f / fAspectMultiplier, 1f);
-                        __instance._dialogRoot.gameObject.GetComponent<RectTransform>().anchorMin = new Vector2(0.5f / fAspectMultiplier, 1f);
-                        __instance._header.gameObject.GetComponent<RectTransform>().anchorMax = new Vector2(0.5f / fAspectMultiplier, 1f);
-                        __instance._header.gameObject.GetComponent<RectTransform>().anchorMin = new Vector2(0.5f / fAspectMultiplier, 1f);
+                        float fAnchorOffset = (float)((fAspectMultiplier - 1) / 2) / fAspectMultiplier;
+                        __instance._dialogRoot.gameObject.GetComponent<RectTransform>().anchorMax = new Vector2(fAnchorOffset, 1f);
+                        __instance._dialogRoot.gameObject.GetComponent<RectTransform>().anchorMin = new Vector2(fAnchorOffset, 1f);
+                        __instance._header.gameObject.GetComponent<RectTransform>().anchorMax = new Vector2(fAnchorOffset, 1f);
+                        __instance._header.gameObject.GetComponent<RectTransform>().anchorMin = new Vector2(fAnchorOffset, 1f);
                         Log.LogInfo($"Offset inn screen.");
                     }
                 }
