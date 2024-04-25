@@ -10,10 +10,8 @@ using UnityEngine.UI;
 using Common.UI;
 using Kaeru.UI;
 using GameData;
-using System;
 using FieldStage;
-using Battle;
-using UI.Title;
+using System;
 
 namespace HundredHeroesFix
 {
@@ -297,8 +295,6 @@ namespace HundredHeroesFix
                     }
                 }
             }
-
-
 
             // Span screen fades
             [HarmonyPatch(typeof(Framework.FadeOrganizer), nameof(Framework.FadeOrganizer.Start))]
