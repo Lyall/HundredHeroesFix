@@ -12,6 +12,8 @@ using Kaeru.UI;
 using GameData;
 using System;
 using FieldStage;
+using Battle;
+using UI.Title;
 
 namespace HundredHeroesFix
 {
@@ -28,6 +30,7 @@ namespace HundredHeroesFix
 
         // Features
         public static ConfigEntry<bool> bSkipIntroLogos;
+        public static ConfigEntry<bool> bSkipOpeningMovie;
         public static ConfigEntry<bool> bDisableCursor;
         public static ConfigEntry<bool> bControllerGlyphs;
         public static ConfigEntry<int> iControllerStyle;
@@ -49,6 +52,9 @@ namespace HundredHeroesFix
         public static float fHUDWidthOffset;
         public static float fHUDHeight;
         public static float fHUDHeightOffset;
+
+        // Variables
+        public static bool bHasSkippedOpeningMovie;
 
         public override void Load()
         {
@@ -82,6 +88,11 @@ namespace HundredHeroesFix
                                 "SkipLogos",
                                 true,
                                 "Skips intro logos.");
+
+            bSkipOpeningMovie = Config.Bind("Intro Skip",
+                                "SkipOpeningMovie",
+                                true,
+                                "Skips opening movie.");
 
             bDisableCursor = Config.Bind("Disable Cursor",
                                "Enabled",
@@ -149,7 +160,7 @@ namespace HundredHeroesFix
             }
 
             // Apply patches
-            if (bSkipIntroLogos.Value)
+            if (bSkipIntroLogos.Value || bSkipOpeningMovie.Value)
             {
                 Harmony.CreateAndPatchAll(typeof(SkipIntroPatch));
             }
@@ -175,7 +186,7 @@ namespace HundredHeroesFix
         [HarmonyPatch]
         public class SkipIntroPatch
         {
-            // Skip intro
+            // Skip intro logos
             [HarmonyPatch(typeof(UI.Title.TitleLogoSequenceController), nameof(UI.Title.TitleLogoSequenceController.FadeInOut))]
             [HarmonyPrefix]
             public static void LogoSkip(UI.Title.TitleLogoSequenceController __instance, ref CanvasGroup __0, ref float __1, ref float __2, ref float __3)
@@ -186,6 +197,20 @@ namespace HundredHeroesFix
                     __2 = 0.0001f;
                     __3 = 0.0001f;
                     Log.LogInfo($"Skipping intro logos.");
+                }
+            }
+
+            // Skip opening movie
+            [HarmonyPatch(typeof(UI.Title.TitleCanvas), nameof(UI.Title.TitleCanvas.IsOpeningMovieStarted))]
+            [HarmonyPostfix]
+            public static void OpeningMovieSkip(UI.Title.TitleCanvas __instance, ref bool __result)
+            {
+                if (__result == true && bSkipOpeningMovie.Value && !bHasSkippedOpeningMovie)
+                {
+                    __instance.Stop();
+                    // Only skip it the first time in case someone wants to idle the main menu and watch it again I guess?
+                    bHasSkippedOpeningMovie = true;
+                    Log.LogInfo($"Skipped opening movie.");
                 }
             }
         }
