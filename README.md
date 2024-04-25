@@ -28,6 +28,7 @@ Please report any issues you see.
 This list will contain bugs which may or may not be fixed.
 
 - When using an ultrawide display, the HUD is a mixture of spanned and 16:9.
+- Some screens may be aligned to the left or zoomed in when using an ultrawide display.
 
 ## Screenshots
 
