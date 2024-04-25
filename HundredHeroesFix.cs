@@ -11,6 +11,7 @@ using Common.UI;
 using Kaeru.UI;
 using GameData;
 using System;
+using FieldStage;
 
 namespace HundredHeroesFix
 {
@@ -36,6 +37,7 @@ namespace HundredHeroesFix
         public static ConfigEntry<float> fRenderScale;
         public static ConfigEntry<float> fShadowDistance;
         public static ConfigEntry<int> iShadowResolution;
+        public static ConfigEntry<bool> bEnableSMAA;
 
         // Aspect Ratio
         public static float fAspectRatio;
@@ -121,6 +123,11 @@ namespace HundredHeroesFix
                                 (int)3,
                                 new ConfigDescription("Set shadow resolution. 1 = 256, 2 = 512, 3 = 1024, 4 = 2048, 5 = 4096",
                                 new AcceptableValueRange<int>(1, 5)));
+
+            bEnableSMAA = Config.Bind("Graphical Tweaks",
+                                "AntiAliasing",
+                                true,
+                                "Enables high quality post-process SMAA.");
 
             // Calculate aspect ratio
             fAspectRatio = (float)iCustomResX.Value / iCustomResY.Value;
@@ -388,7 +395,22 @@ namespace HundredHeroesFix
                     };
                     URPAsset.m_MainLightShadowmapResolution = shadowRes; // 1024 high
                 }
+            }
 
+            [HarmonyPatch(typeof(FieldCamera), nameof(FieldCamera.Awake))]
+            [HarmonyPostfix]
+            public static void AntiAliasing(FieldCamera __instance)
+            {
+                if (bEnableSMAA.Value)
+                {
+                    if (__instance.MainCamera != null)
+                    {
+                        var UACD = __instance.MainCamera.GetComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>();
+                        UACD.antialiasing = AntialiasingMode.SubpixelMorphologicalAntiAliasing;
+                        UACD.antialiasingQuality = AntialiasingQuality.High;
+                        Log.LogInfo("Enabled high quality SMAA on Main Camera.");
+                    }
+                }
             }
         }
     }
