@@ -258,6 +258,22 @@ namespace HundredHeroesFix
                 }
             }
 
+            // Offset blacksmith build up screen
+            [HarmonyPatch(typeof(BlackSmithWindow), nameof(BlackSmithWindow.Awake))]
+            [HarmonyPostfix]
+            public static void BlacksmithPos(BlackSmithWindow __instance)
+            {
+                if (fAspectRatio > fNativeAspect)
+                {
+                    if (__instance._buildup != null)
+                    {
+                        float fWidthOffset = (float)((1080 * fAspectRatio) - 1920) / 2;
+                        __instance._buildup.GetComponent<RectTransform>().AddLocalPositionX(fWidthOffset);
+                        Log.LogInfo($"Offset blacksmith buildup screen.");
+                    }
+                }
+            }
+
             // Offset inn screen
             [HarmonyPatch(typeof(InnCanvas), nameof(InnCanvas.Open))]
             [HarmonyPostfix]
@@ -335,7 +351,8 @@ namespace HundredHeroesFix
             {
                 if (fAspectRatio > fNativeAspect)
                 {
-                    if (__instance.gameObject.name == "filter" || __instance.gameObject.name == "Filter" || __instance.gameObject.name == "FIlter" || __instance.gameObject.name == "blackSheet" || __instance.gameObject.name == "bgFilter")
+                    if (__instance.gameObject.name == "filter" || __instance.gameObject.name == "Filter" || __instance.gameObject.name == "FIlter" 
+                        || __instance.gameObject.name == "blackSheet" || __instance.gameObject.name == "bgFilter" || __instance.gameObject.name == "filterBlack")
                     {
                         var transform = __instance.gameObject.GetComponent<RectTransform>();
                         if (transform.sizeDelta == new Vector2(1920f, 1080f) || transform.sizeDelta == new Vector2(2000f, 1200f))
@@ -392,6 +409,19 @@ namespace HundredHeroesFix
                         transform.localScale = new Vector3(1.78f * fAspectMultiplier, 1.78f, 1.78f);
                         Log.LogInfo($"Adjusted the size of screen transitions.");
                     }
+                }
+            }
+
+            // Change main camera background colour
+            [HarmonyPatch(typeof(FieldCamera), nameof(FieldCamera.Awake))]
+            [HarmonyPostfix]
+            public static void AntiAliasing(FieldCamera __instance)
+            {
+                if (__instance.MainCamera != null)
+                {
+                    // Set background colour to black instead of blue. Makes the void outside of building stand out less, also good for OLEDs?
+                    __instance.MainCamera.backgroundColor = Color.black;
+                    Log.LogInfo("Changed background colour of Main Camera.");
                 }
             }
         }
@@ -451,6 +481,7 @@ namespace HundredHeroesFix
                 {
                     if (__instance.MainCamera != null)
                     {
+                        __instance.MainCamera.backgroundColor = Color.black;
                         var UACD = __instance.MainCamera.GetComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>();
                         UACD.antialiasing = AntialiasingMode.SubpixelMorphologicalAntiAliasing;
                         UACD.antialiasingQuality = AntialiasingQuality.High;
