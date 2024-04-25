@@ -15,6 +15,7 @@ This is a BepInEx plugin for Eiyuden Chronicle: Hundred Heroes that adds custom 
 ## Installation
 - Grab the latest release of HundredHeroesFix from [here.](https://github.com/Lyall/HundredHeroesFix/releases)
 - Extract the contents of the release zip in to the the game folder. (e.g. "**steamapps\common\Eiyuden Chronicle**" for Steam).
+- 🚩First boot of the game may take a few minutes as BepInEx generates an assembly cache!
 
 ### Steam Deck/Linux Additional Instructions
 🚩**You do not need to do this if you are using Windows!**
