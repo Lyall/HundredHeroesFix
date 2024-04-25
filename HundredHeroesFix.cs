@@ -231,6 +231,25 @@ namespace HundredHeroesFix
                     __instance.transform.GetChild(0).localScale = new Vector3(1f * fAspectMultiplier, 1f, 1f);
                     __instance.transform.GetChild(1).localScale = new Vector3(1f * fAspectMultiplier, 1f, 1f);
                     __instance.transform.GetChild(2).localScale = new Vector3(1f * fAspectMultiplier, 1f, 1f);
+                    Log.LogInfo($"Offset and spanned add unit screen.");
+                }
+            }
+
+            // Offset inn screen
+            [HarmonyPatch(typeof(InnCanvas), nameof(InnCanvas.Open))]
+            [HarmonyPostfix]
+            public static void InnCanvasPos(InnCanvas __instance)
+            {
+                if (fAspectRatio > fNativeAspect)
+                {
+                    if (__instance._header != null && __instance._dialogRoot != null)
+                    {
+                        __instance._dialogRoot.gameObject.GetComponent<RectTransform>().anchorMax = new Vector2(0.5f / fAspectMultiplier, 1f);
+                        __instance._dialogRoot.gameObject.GetComponent<RectTransform>().anchorMin = new Vector2(0.5f / fAspectMultiplier, 1f);
+                        __instance._header.gameObject.GetComponent<RectTransform>().anchorMax = new Vector2(0.5f / fAspectMultiplier, 1f);
+                        __instance._header.gameObject.GetComponent<RectTransform>().anchorMin = new Vector2(0.5f / fAspectMultiplier, 1f);
+                        Log.LogInfo($"Offset inn screen.");
+                    }
                 }
             }
 
@@ -241,14 +260,19 @@ namespace HundredHeroesFix
             {
                 if (fAspectRatio > fNativeAspect)
                 {
-                    if (__instance != null && __instance.referenceResolution == new Vector2(1920f, 600f))
+                    if (__instance != null)
                     {
-                        __instance.referenceResolution = new Vector2(1920f, 1080f);
-                        __instance.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
-                        Log.LogInfo($"Fixed broken screen {__instance.transform.parent.gameObject.name}.");
+                        if (__instance.referenceResolution == new Vector2(1920f, 600f) || (__instance.referenceResolution == new Vector2(1920f, 1080f) && __instance.screenMatchMode == CanvasScaler.ScreenMatchMode.MatchWidthOrHeight))
+                        {
+                            __instance.referenceResolution = new Vector2(1920f, 1080f);
+                            __instance.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
+                            Log.LogInfo($"Fixed broken screen {__instance.transform.parent.gameObject.name}.");
+                        }
                     }
                 }
             }
+
+
 
             // Span screen fades
             [HarmonyPatch(typeof(Framework.FadeOrganizer), nameof(Framework.FadeOrganizer.Start))]
@@ -289,7 +313,7 @@ namespace HundredHeroesFix
             {
                 if (fAspectRatio > fNativeAspect)
                 {
-                    if (__instance.gameObject.name == "filter" || __instance.gameObject.name == "Filter" || __instance.gameObject.name == "blackSheet")
+                    if (__instance.gameObject.name == "filter" || __instance.gameObject.name == "Filter" || __instance.gameObject.name == "FIlter" || __instance.gameObject.name == "blackSheet" || __instance.gameObject.name == "bgFilter")
                     {
                         var transform = __instance.gameObject.GetComponent<RectTransform>();
                         if (transform.sizeDelta == new Vector2(1920f, 1080f) || transform.sizeDelta == new Vector2(2000f, 1200f))
