@@ -40,6 +40,8 @@ namespace HundredHeroesFix
         public static ConfigEntry<int> iShadowResolution;
         public static ConfigEntry<int> iShadowCascades;
         public static ConfigEntry<bool> bEnableSMAA;
+        public static ConfigEntry<bool> bChromaticAberration;
+        public static ConfigEntry<bool> bVignette;
 
         // Aspect Ratio
         public static float fAspectRatio;
@@ -94,9 +96,9 @@ namespace HundredHeroesFix
                                 "Skips opening movie.");
 
             bDisableCursor = Config.Bind("Disable Cursor",
-                               "Enabled",
-                               true,
-                               "Set to true to disable showing the mouse cursor.");
+                                "Enabled",
+                                true,
+                                "Set to true to disable showing the mouse cursor.");
 
             bControllerGlyphs = Config.Bind("Force Controller Icons",
                                 "Enabled",
@@ -135,15 +137,25 @@ namespace HundredHeroesFix
                                 new AcceptableValueRange<int>(1, 6)));
 
             iShadowCascades = Config.Bind("Graphical Tweaks",
-                               "ShadowCascades",
-                               (int)4,
-                               new ConfigDescription("Set number of shadow cascades. Default High = 3",
-                               new AcceptableValueRange<int>(1, 4)));
+                                "ShadowCascades",
+                                (int)4,
+                                new ConfigDescription("Set number of shadow cascades. Default High = 3",
+                                new AcceptableValueRange<int>(1, 4)));
 
             bEnableSMAA = Config.Bind("Graphical Tweaks",
                                 "AntiAliasing",
                                 true,
                                 "Enables high quality post-process SMAA.");
+
+            bChromaticAberration = Config.Bind("Graphical Tweaks",
+                                "DisableChromaticAberration",
+                                true,
+                                "Set to true to disable chromatic abberation (colour fringing at edges of screen).");
+
+            bVignette = Config.Bind("Graphical Tweaks",
+                                "DisableVignette",
+                                true,
+                                "Set to true to disable vignette (darkening at edges of screen).");
 
             // Calculate aspect ratio
             fAspectRatio = (float)iCustomResX.Value / iCustomResY.Value;
@@ -503,6 +515,32 @@ namespace HundredHeroesFix
                         UACD.antialiasing = AntialiasingMode.SubpixelMorphologicalAntiAliasing;
                         UACD.antialiasingQuality = AntialiasingQuality.High;
                         Log.LogInfo("Enabled high quality SMAA on Main Camera.");
+                    }
+                }
+            }
+
+            // Adjust post-process effects
+            [HarmonyPatch(typeof(UnityEngine.Rendering.Volume), nameof(UnityEngine.Rendering.Volume.OnEnable))]
+            [HarmonyPostfix]
+            public static void PostProcessTweaks(UnityEngine.Rendering.Volume __instance)
+            {
+                if (bVignette.Value)
+                {
+                    __instance.profile.TryGet(out Vignette vignette);
+                    if (vignette)
+                    {
+                        vignette.active = false;
+                        Log.LogInfo($"Disabled vignette on {__instance.gameObject.name}.");
+                    }
+                }
+
+                if (bChromaticAberration.Value)
+                {
+                    __instance.profile.TryGet(out ChromaticAberration ca);
+                    if (ca)
+                    {
+                        ca.active = false;
+                        Log.LogInfo($"Disabled chromatic aberration on {__instance.gameObject.name}.");
                     }
                 }
             }
