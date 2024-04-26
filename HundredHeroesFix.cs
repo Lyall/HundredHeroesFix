@@ -149,12 +149,12 @@ namespace HundredHeroesFix
 
             bChromaticAberration = Config.Bind("Graphical Tweaks",
                                 "DisableChromaticAberration",
-                                true,
+                                false,
                                 "Set to true to disable chromatic abberation (colour fringing at edges of screen).");
 
             bVignette = Config.Bind("Graphical Tweaks",
                                 "DisableVignette",
-                                true,
+                                false,
                                 "Set to true to disable vignette (darkening at edges of screen).");
 
             // Calculate aspect ratio
