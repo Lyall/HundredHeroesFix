@@ -38,6 +38,7 @@ namespace HundredHeroesFix
         public static ConfigEntry<float> fRenderScale;
         public static ConfigEntry<float> fShadowDistance;
         public static ConfigEntry<int> iShadowResolution;
+        public static ConfigEntry<int> iShadowCascades;
         public static ConfigEntry<bool> bEnableSMAA;
 
         // Aspect Ratio
@@ -129,9 +130,15 @@ namespace HundredHeroesFix
 
             iShadowResolution = Config.Bind("Graphical Tweaks",
                                 "ShadowResolution",
-                                (int)3,
-                                new ConfigDescription("Set shadow resolution. 1 = 256, 2 = 512, 3 = 1024, 4 = 2048, 5 = 4096",
-                                new AcceptableValueRange<int>(1, 5)));
+                                (int)5,
+                                new ConfigDescription("Set shadow resolution. 1 = 256, 2 = 512, 3 = 1024, 4 = 2048, 5 = 4096, 6 = 8192. Default High = 3",
+                                new AcceptableValueRange<int>(1, 6)));
+
+            iShadowCascades = Config.Bind("Graphical Tweaks",
+                               "ShadowCascades",
+                               (int)4,
+                               new ConfigDescription("Set number of shadow cascades. Default High = 3",
+                               new AcceptableValueRange<int>(1, 4)));
 
             bEnableSMAA = Config.Bind("Graphical Tweaks",
                                 "AntiAliasing",
@@ -265,10 +272,17 @@ namespace HundredHeroesFix
             {
                 if (fAspectRatio > fNativeAspect)
                 {
-                    if (__instance._buildup != null)
+                    if (__instance.gameObject != null)
                     {
                         float fWidthOffset = (float)((1080 * fAspectRatio) - 1920) / 2;
-                        __instance._buildup.GetComponent<RectTransform>().AddLocalPositionX(fWidthOffset);
+                        __instance.gameObject.GetComponent<RectTransform>().AddLocalPositionX(fWidthOffset);
+                        if (__instance.gameObject.transform.GetChild(0).gameObject.transform.GetChild(0).gameObject.name == "BGblackLeft")
+                        {
+                            var localPos = __instance.gameObject.transform.GetChild(0).gameObject.transform.GetChild(0).gameObject.GetComponent<RectTransform>().localPosition;
+                            localPos.x -= fWidthOffset;
+                            __instance.gameObject.transform.GetChild(0).gameObject.transform.GetChild(0).gameObject.GetComponent<RectTransform>().localPosition = localPos;
+                            __instance.gameObject.transform.GetChild(0).gameObject.transform.GetChild(0).gameObject.GetComponent<RectTransform>().localScale = new Vector3(1f * fAspectMultiplier, 1f, 1f);
+                        }
                         Log.LogInfo($"Offset blacksmith buildup screen.");
                     }
                 }
@@ -457,19 +471,22 @@ namespace HundredHeroesFix
                 var URPAsset = UniversalRenderPipeline.asset;
                 if (URPAsset != null)
                 {
-                    URPAsset.renderScale = fRenderScale.Value;
+                    URPAsset.renderScale = fRenderScale.Value; // 1f default
                     URPAsset.shadowDistance = fShadowDistance.Value; // 150f high
 
                     var shadowRes = iShadowResolution.Value switch
                     {
-                        1 => UnityEngine.Rendering.Universal.ShadowResolution._256,
-                        2 => UnityEngine.Rendering.Universal.ShadowResolution._512,
-                        3 => UnityEngine.Rendering.Universal.ShadowResolution._1024,
-                        4 => UnityEngine.Rendering.Universal.ShadowResolution._2048,
-                        5 => UnityEngine.Rendering.Universal.ShadowResolution._4096,
-                        _ => UnityEngine.Rendering.Universal.ShadowResolution._1024,
+                        1 => 256,
+                        2 => 512,
+                        3 => 1024,
+                        4 => 2048,
+                        5 => 4096,
+                        6 => 8192,
+                        _ => 1024,
                     };
-                    URPAsset.m_MainLightShadowmapResolution = shadowRes; // 1024 high
+                    URPAsset.mainLightShadowmapResolution = shadowRes; // 1024 high
+                    URPAsset.additionalLightsShadowmapResolution = shadowRes; // 1024 high
+                    URPAsset.shadowCascadeCount = iShadowCascades.Value; // 3 high
                 }
             }
 
