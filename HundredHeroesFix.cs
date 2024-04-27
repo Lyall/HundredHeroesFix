@@ -260,9 +260,11 @@ namespace HundredHeroesFix
             // Remove 2 second delay from auto-advancing dialogue
             [HarmonyPatch(typeof(TextData.UI.KaeruText), nameof(TextData.UI.KaeruText.AutomaticSubmit))]
             [HarmonyPrefix]
-            public static void RemoveDialogueDelay(ref float __0)
+            public static void RemoveDialogueDelay(TextData.UI.KaeruText __instance, ref float __0)
             {
-                if (bAutoDialogDelay.Value)
+                var sndMngr = SoundManager.Instance;
+                // Only remove dialogue delay for voiced lines
+                if (bAutoDialogDelay.Value && sndMngr.UseEventSE)
                 {
                     // 100ms delay seems about right?
                     __0 = 0.1f;
