@@ -408,8 +408,7 @@ namespace HundredHeroesFix
             {
                 if (fAspectRatio > fNativeAspect)
                 {
-                    if (__instance.gameObject.name == "filter" || __instance.gameObject.name == "Filter" || __instance.gameObject.name == "FIlter"
-                        || __instance.gameObject.name == "blackSheet" || __instance.gameObject.name == "bgFilter" || __instance.gameObject.name == "filterBlack")
+                    if (__instance.gameObject.name == "filter" || __instance.gameObject.name == "Filter" || __instance.gameObject.name == "FIlter" || __instance.gameObject.name == "blackSheet" || __instance.gameObject.name == "bgFilter" || __instance.gameObject.name == "filterBlack")
                     {
                         var transform = __instance.gameObject.GetComponent<RectTransform>();
                         if (transform.sizeDelta == new Vector2(1920f, 1080f) || transform.sizeDelta == new Vector2(2000f, 1200f))
@@ -417,6 +416,14 @@ namespace HundredHeroesFix
                             transform.sizeDelta = new Vector2(1080f * fAspectRatio, 1080f);
                             Log.LogInfo($"Ultrawide: Adjusted the size of {__instance.gameObject.transform.parent.gameObject.name}->{__instance.gameObject.name}");
                         }
+                    }
+
+                    if (__instance.gameObject.name == "statusBlind")
+                    {
+                        float fWidthOffset = (float)((1080 * fAspectRatio) - 1920) / 2;
+                        var transform = __instance.gameObject.GetComponent<RectTransform>();
+                        transform.localScale = new Vector3(fAspectMultiplier + (fAspectMultiplier - 1f), 1f, 1f);
+                        transform.anchoredPosition = new Vector2(50f + fWidthOffset, -50f);
                     }
                 }
             }
