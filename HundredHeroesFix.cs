@@ -184,17 +184,25 @@ namespace HundredHeroesFix
             }
 
             // Apply patches
+            Harmony.CreateAndPatchAll(typeof(ResolutionPatch));
             if (bSkipIntroLogos.Value || bSkipOpeningMovie.Value)
             {
+                Log.LogInfo($"Patches: Applying skip intro patch.");
                 Harmony.CreateAndPatchAll(typeof(SkipIntroPatch));
             }
-            Harmony.CreateAndPatchAll(typeof(ResolutionPatch));
+            if (fAspectRatio > fNativeAspect)
+            {
+                Log.LogInfo($"Patches: Applying ultrawide patch.");
+                Harmony.CreateAndPatchAll(typeof(UltrawidePatch));
+            }
             if (bControllerGlyphs.Value)
             {
+                Log.LogInfo($"Patches: Applying controller glyph patch.");
                 Harmony.CreateAndPatchAll(typeof(ControllerGlyphPatch));
             }
             if (bGraphicalTweaks.Value)
             {
+                Log.LogInfo($"Patches: Applying graphical tweaks patch.");
                 Harmony.CreateAndPatchAll(typeof(GraphicsTweakPatch));
             }
             if (bDisableCursor.Value)
@@ -250,11 +258,6 @@ namespace HundredHeroesFix
                     __1 = iCustomResY.Value;
                     __2 = bFullscreen.Value;
                     Log.LogInfo($"Resolution: Applied custom resolution of {iCustomResX.Value}x{iCustomResY.Value} : Fullscreen = {bFullscreen.Value}");
-                    if (fAspectRatio > fNativeAspect)
-                    {
-                        Log.LogInfo($"Resolution: Applying ultrawide patches.");
-                        Harmony.CreateAndPatchAll(typeof(UltrawidePatch));
-                    }
                     return true;
                 }
                 return true;
