@@ -505,6 +505,7 @@ namespace HundredHeroesFix
                     // Anisotropic filtering
                     QualitySettings.anisotropicFiltering = AnisotropicFiltering.ForceEnable;
                     Texture.SetGlobalAnisotropicFilteringLimits(iAnisotropicFiltering.Value, iAnisotropicFiltering.Value);
+                    Log.LogInfo($"Graphical Tweaks: Set anisotropic filtering to x{iAnisotropicFiltering.Value}");
 
                     // Shadows
                     var shadowRes = iShadowResolution.Value switch
