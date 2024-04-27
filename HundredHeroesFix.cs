@@ -222,6 +222,7 @@ namespace HundredHeroesFix
                 if (__instance != null)
                 {
                     __instance.ChangeLogoSkipEnable(true);
+                    Log.LogInfo($"Intro Skip: Enabled skippable logos.");
                 }
             }
 
