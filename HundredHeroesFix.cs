@@ -36,6 +36,7 @@ namespace HundredHeroesFix
         // Graphical Tweaks
         public static ConfigEntry<bool> bGraphicalTweaks;
         public static ConfigEntry<float> fRenderScale;
+        public static ConfigEntry<int> iAnisotropicFiltering;
         public static ConfigEntry<float> fShadowDistance;
         public static ConfigEntry<int> iShadowResolution;
         public static ConfigEntry<int> iShadowCascades;
@@ -123,6 +124,12 @@ namespace HundredHeroesFix
                                 (float)1f,
                                 new ConfigDescription("Set Render Scale. Higher than 1 downsamples and lower than 1 upsamples.",
                                 new AcceptableValueRange<float>(0.5f, 4f)));
+
+            iAnisotropicFiltering = Config.Bind("Graphical Tweaks",
+                                "AnisotropicFiltering",
+                                (int)16,
+                                new ConfigDescription("Set Anisotropic Filtering level.",
+                                new AcceptableValueRange<int>(1, 16)));
 
             fShadowDistance = Config.Bind("Graphical Tweaks",
                                 "ShadowDistance",
@@ -491,10 +498,15 @@ namespace HundredHeroesFix
                 var URPAsset = UniversalRenderPipeline.asset;
                 if (URPAsset != null)
                 {
+                    // Render scale
                     URPAsset.renderScale = fRenderScale.Value; // 1f default
                     Log.LogInfo($"Graphical Tweaks: Set render scale to {URPAsset.renderScale}");
-                    URPAsset.shadowDistance = fShadowDistance.Value; // 150f high
-                    Log.LogInfo($"Graphical Tweaks: Set shadow distance to {URPAsset.shadowDistance}");
+
+                    // Anisotropic filtering
+                    QualitySettings.anisotropicFiltering = AnisotropicFiltering.ForceEnable;
+                    Texture.SetGlobalAnisotropicFilteringLimits(iAnisotropicFiltering.Value, iAnisotropicFiltering.Value);
+
+                    // Shadows
                     var shadowRes = iShadowResolution.Value switch
                     {
                         1 => 256,
@@ -505,6 +517,8 @@ namespace HundredHeroesFix
                         6 => 8192,
                         _ => 1024,
                     };
+                    URPAsset.shadowDistance = fShadowDistance.Value; // 150f high
+                    Log.LogInfo($"Graphical Tweaks: Set shadow distance to {URPAsset.shadowDistance}");
                     URPAsset.mainLightShadowmapResolution = shadowRes; // 1024 high
                     Log.LogInfo($"Graphical Tweaks: Set main light shadowmap resolution to {URPAsset.mainLightShadowmapResolution}");
                     URPAsset.additionalLightsShadowmapResolution = shadowRes; // 1024 high
