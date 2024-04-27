@@ -33,6 +33,9 @@
     <Reference Include="Unity.RenderPipelines.Universal.Runtime">
       <HintPath>libs\Unity.RenderPipelines.Universal.Runtime-nstrip.dll</HintPath>
     </Reference>
+    <Reference Include="Unity.TextMeshPro">
+      <HintPath>libs\Unity.TextMeshPro-nstrip.dll</HintPath>
+    </Reference>
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>libs\UnityEngine.CoreModule-nstrip.dll</HintPath>
     </Reference>

@@ -32,6 +32,7 @@ namespace HundredHeroesFix
         public static ConfigEntry<bool> bDisableCursor;
         public static ConfigEntry<bool> bControllerGlyphs;
         public static ConfigEntry<int> iControllerStyle;
+        public static ConfigEntry<bool> bAutoDialogDelay;
 
         // Graphical Tweaks
         public static ConfigEntry<bool> bGraphicalTweaks;
@@ -100,6 +101,11 @@ namespace HundredHeroesFix
                                 "Enabled",
                                 true,
                                 "Set to true to disable showing the mouse cursor.");
+
+            bAutoDialogDelay = Config.Bind("Disable Dialog Auto-Advance Delay",
+                                "Enabled",
+                                true,
+                                "Removes the forced 2-second delay on auto-advancing dialog.");
 
             bControllerGlyphs = Config.Bind("Force Controller Icons",
                                 "Enabled",
@@ -188,6 +194,8 @@ namespace HundredHeroesFix
             Harmony.CreateAndPatchAll(typeof(ResolutionPatch));
             Log.LogInfo($"Patches: Applying skip intro patch.");
             Harmony.CreateAndPatchAll(typeof(SkipIntroPatch));
+            Log.LogInfo($"Patches: Applying miscellaneous patch.");
+            Harmony.CreateAndPatchAll(typeof(MiscPatch));
 
             if (fAspectRatio > fNativeAspect)
             {
@@ -251,6 +259,22 @@ namespace HundredHeroesFix
                     // Only skip it the first time in case someone wants to idle the main menu and watch it again I guess?
                     bHasSkippedOpeningMovie = true;
                     Log.LogInfo($"Intro Skip: Skipped opening movie.");
+                }
+            }
+        }
+
+        [HarmonyPatch]
+        public class MiscPatch
+        {
+            // Remove 2 second delay from auto-advancing dialogue
+            [HarmonyPatch(typeof(TextData.UI.KaeruText), nameof(TextData.UI.KaeruText.AutomaticSubmit))]
+            [HarmonyPrefix]
+            public static void RemoveDialogueDelay(ref float __0)
+            {
+                if (bAutoDialogDelay.Value)
+                {
+                    // 100ms delay seems about right?
+                    __0 = 0.1f;
                 }
             }
         }
