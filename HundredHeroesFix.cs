@@ -192,8 +192,6 @@ namespace HundredHeroesFix
             // Apply patches
             Log.LogInfo($"Patches: Applying resolution patch.");
             Harmony.CreateAndPatchAll(typeof(ResolutionPatch));
-            Log.LogInfo($"Patches: Applying skip intro patch.");
-            Harmony.CreateAndPatchAll(typeof(SkipIntroPatch));
             Log.LogInfo($"Patches: Applying miscellaneous patch.");
             Harmony.CreateAndPatchAll(typeof(MiscPatch));
 
@@ -201,6 +199,11 @@ namespace HundredHeroesFix
             {
                 Log.LogInfo($"Patches: Applying ultrawide patch.");
                 Harmony.CreateAndPatchAll(typeof(UltrawidePatch));
+            }
+            if (bSkipIntroLogos.Value || bSkipOpeningMovie.Value)
+            {
+                Log.LogInfo($"Patches: Applying skip intro patch.");
+                Harmony.CreateAndPatchAll(typeof(SkipIntroPatch));
             }
             if (bControllerGlyphs.Value)
             {
@@ -222,18 +225,6 @@ namespace HundredHeroesFix
         [HarmonyPatch]
         public class SkipIntroPatch
         {
-            // Enable skippable intro
-            [HarmonyPatch(typeof(UI.Title.Context), nameof(UI.Title.Context.Initialize))]
-            [HarmonyPrefix]
-            public static void LogoSkip(UI.Title.Context __instance)
-            {
-                if (__instance != null)
-                {
-                    __instance.ChangeLogoSkipEnable(true);
-                    Log.LogInfo($"Intro Skip: Enabled skippable logos.");
-                }
-            }
-
             // Skip intro logos
             [HarmonyPatch(typeof(UI.Title.TitleLogoSequenceController), nameof(UI.Title.TitleLogoSequenceController.FadeInOut))]
             [HarmonyPrefix]
@@ -275,6 +266,18 @@ namespace HundredHeroesFix
                 {
                     // 100ms delay seems about right?
                     __0 = 0.1f;
+                }
+            }
+
+            // Enable skippable intro
+            [HarmonyPatch(typeof(UI.Title.Context), nameof(UI.Title.Context.Initialize))]
+            [HarmonyPrefix]
+            public static void LogoSkip(UI.Title.Context __instance)
+            {
+                if (__instance != null)
+                {
+                    __instance.ChangeLogoSkipEnable(true);
+                    Log.LogInfo($"Intro Skip: Enabled skippable logos.");
                 }
             }
         }
