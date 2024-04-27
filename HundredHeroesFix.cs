@@ -246,7 +246,7 @@ namespace HundredHeroesFix
             {
                 if (__result == true && bSkipOpeningMovie.Value && !bHasSkippedOpeningMovie)
                 {
-                    //__instance.Stop();
+                    __instance.Stop();
                     // Only skip it the first time in case someone wants to idle the main menu and watch it again I guess?
                     bHasSkippedOpeningMovie = true;
                     Log.LogInfo($"Intro Skip: Skipped opening movie.");
