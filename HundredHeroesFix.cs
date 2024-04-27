@@ -105,7 +105,7 @@ namespace HundredHeroesFix
             bAutoDialogDelay = Config.Bind("Disable Dialog Auto-Advance Delay",
                                 "Enabled",
                                 true,
-                                "Removes the forced 2-second delay on auto-advancing dialog.");
+                                "Removes the forced 2-second delay on auto-advancing voiced dialog.");
 
             bControllerGlyphs = Config.Bind("Force Controller Icons",
                                 "Enabled",
