@@ -181,10 +181,7 @@ namespace HundredHeroesFix
             {
                 Harmony.CreateAndPatchAll(typeof(SkipIntroPatch));
             }
-            if (bCustomRes.Value)
-            {
-                Harmony.CreateAndPatchAll(typeof(ResolutionPatch));
-            }
+            Harmony.CreateAndPatchAll(typeof(ResolutionPatch));
             if (bControllerGlyphs.Value)
             {
                 Harmony.CreateAndPatchAll(typeof(ControllerGlyphPatch));
@@ -213,7 +210,7 @@ namespace HundredHeroesFix
                     __1 = 0.0001f;
                     __2 = 0.0001f;
                     __3 = 0.0001f;
-                    Log.LogInfo($"Skipping intro logos.");
+                    Log.LogInfo($"Intro Skip: Skipping intro logos.");
                 }
             }
 
@@ -227,7 +224,7 @@ namespace HundredHeroesFix
                     __instance.Stop();
                     // Only skip it the first time in case someone wants to idle the main menu and watch it again I guess?
                     bHasSkippedOpeningMovie = true;
-                    Log.LogInfo($"Skipped opening movie.");
+                    Log.LogInfo($"Intro Skip: Skipped opening movie.");
                 }
             }
         }
@@ -240,13 +237,26 @@ namespace HundredHeroesFix
             [HarmonyPrefix]
             public static bool ApplyResolution(Screen __instance, ref int __0, ref int __1, ref bool __2)
             {
-                __0 = iCustomResX.Value;
-                __1 = iCustomResY.Value;
-                __2 = bFullscreen.Value;
-                Log.LogInfo($"Applied custom resolution of {iCustomResX.Value}x{iCustomResY.Value} : Fullscreen = {bFullscreen.Value}");
+                if (bCustomRes.Value)
+                {
+                    __0 = iCustomResX.Value;
+                    __1 = iCustomResY.Value;
+                    __2 = bFullscreen.Value;
+                    Log.LogInfo($"Resolution: Applied custom resolution of {iCustomResX.Value}x{iCustomResY.Value} : Fullscreen = {bFullscreen.Value}");
+                    if (fAspectRatio > fNativeAspect)
+                    {
+                        Log.LogInfo($"Resolution: Applying ultrawide patches.");
+                        Harmony.CreateAndPatchAll(typeof(UltrawidePatch));
+                    }
+                    return true;
+                }
                 return true;
             }
+        }
 
+        [HarmonyPatch]
+        public class UltrawidePatch
+        {
             // Disable camera viewport from being adjusted
             [HarmonyPatch(typeof(CameraViewPortFitting), nameof(CameraViewPortFitting.AdjustCameraViewport))]
             [HarmonyPrefix]
@@ -273,7 +283,7 @@ namespace HundredHeroesFix
                     __instance.transform.GetChild(0).localScale = new Vector3(1f * fAspectMultiplier, 1f, 1f);
                     __instance.transform.GetChild(1).localScale = new Vector3(1f * fAspectMultiplier, 1f, 1f);
                     __instance.transform.GetChild(2).localScale = new Vector3(1f * fAspectMultiplier, 1f, 1f);
-                    Log.LogInfo($"Offset and spanned add unit screen.");
+                    Log.LogInfo($"Ultrawide: Offset and spanned add unit screen.");
                 }
             }
 
@@ -295,7 +305,7 @@ namespace HundredHeroesFix
                             __instance.gameObject.transform.GetChild(0).gameObject.transform.GetChild(0).gameObject.GetComponent<RectTransform>().localPosition = localPos;
                             __instance.gameObject.transform.GetChild(0).gameObject.transform.GetChild(0).gameObject.GetComponent<RectTransform>().localScale = new Vector3(1f * fAspectMultiplier, 1f, 1f);
                         }
-                        Log.LogInfo($"Offset blacksmith buildup screen.");
+                        Log.LogInfo($"Ultrawide: Offset blacksmith buildup screen.");
                     }
                 }
             }
@@ -314,7 +324,7 @@ namespace HundredHeroesFix
                         __instance._dialogRoot.gameObject.GetComponent<RectTransform>().anchorMin = new Vector2(fAnchorOffset, 1f);
                         __instance._header.gameObject.GetComponent<RectTransform>().anchorMax = new Vector2(fAnchorOffset, 1f);
                         __instance._header.gameObject.GetComponent<RectTransform>().anchorMin = new Vector2(fAnchorOffset, 1f);
-                        Log.LogInfo($"Offset inn screen.");
+                        Log.LogInfo($"Ultrawide: Offset inn screen.");
                     }
                 }
             }
@@ -332,7 +342,7 @@ namespace HundredHeroesFix
                         {
                             __instance.referenceResolution = new Vector2(1920f, 1080f);
                             __instance.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
-                            Log.LogInfo($"Fixed broken screen {__instance.transform.parent.gameObject.name}.");
+                            Log.LogInfo($"Ultrawide: Fixed broken screen {__instance.transform.parent.gameObject.name}.");
                         }
                     }
                 }
@@ -349,7 +359,7 @@ namespace HundredHeroesFix
                     {
                         var fadeTransform = __instance._fadeImage.gameObject.GetComponent<RectTransform>();
                         fadeTransform.localScale = new Vector3(1f * fAspectMultiplier, 1f, 1f);
-                        Log.LogInfo($"Scaled fade.");
+                        Log.LogInfo($"Ultrawide: Scaled fade.");
                     }
                 }
             }
@@ -365,7 +375,7 @@ namespace HundredHeroesFix
                     if (fAspectRatio > fNativeAspect)
                     {
                         vignette.intensity.value /= fAspectMultiplier;
-                        Log.LogInfo($"Changed intestity of {__instance.gameObject.name}'s vignette to {vignette.intensity.value}");
+                        Log.LogInfo($"Ultrawide: Changed intestity of {__instance.gameObject.name}'s vignette to {vignette.intensity.value}");
                     }
                 }
             }
@@ -377,14 +387,14 @@ namespace HundredHeroesFix
             {
                 if (fAspectRatio > fNativeAspect)
                 {
-                    if (__instance.gameObject.name == "filter" || __instance.gameObject.name == "Filter" || __instance.gameObject.name == "FIlter" 
+                    if (__instance.gameObject.name == "filter" || __instance.gameObject.name == "Filter" || __instance.gameObject.name == "FIlter"
                         || __instance.gameObject.name == "blackSheet" || __instance.gameObject.name == "bgFilter" || __instance.gameObject.name == "filterBlack")
                     {
                         var transform = __instance.gameObject.GetComponent<RectTransform>();
                         if (transform.sizeDelta == new Vector2(1920f, 1080f) || transform.sizeDelta == new Vector2(2000f, 1200f))
                         {
                             transform.sizeDelta = new Vector2(1080f * fAspectRatio, 1080f);
-                            Log.LogInfo($"Adjusted the size of {__instance.gameObject.transform.parent.gameObject.name}->{__instance.gameObject.name}");
+                            Log.LogInfo($"Ultrawide: Adjusted the size of {__instance.gameObject.transform.parent.gameObject.name}->{__instance.gameObject.name}");
                         }
                     }
                 }
@@ -401,7 +411,7 @@ namespace HundredHeroesFix
                     if (transform.sizeDelta == new Vector2(1920f, 1080f))
                     {
                         transform.sizeDelta = new Vector2(1080f * fAspectRatio, 1080f);
-                        Log.LogInfo($"Adjusted the size of background blur");
+                        Log.LogInfo($"Ultrawide: Adjusted the size of background blur");
                     }
                 }
             }
@@ -417,7 +427,7 @@ namespace HundredHeroesFix
                     {
                         var transform = __instance.gameObject.transform.GetChild(0).GetComponent<RectTransform>();
                         transform.sizeDelta = new Vector2(10000f, 10000f); // This one is already 3000x3000 so it's basically a giant square.
-                        Log.LogInfo($"Adjusted the size of tutorial background");
+                        Log.LogInfo($"Ultrawide: Adjusted the size of tutorial background");
                     }
                 }
             }
@@ -433,7 +443,7 @@ namespace HundredHeroesFix
                     {
                         var transform = __instance._fader.transform.parent.GetComponent<Transform>();
                         transform.localScale = new Vector3(1.78f * fAspectMultiplier, 1.78f, 1.78f);
-                        Log.LogInfo($"Adjusted the size of screen transitions.");
+                        Log.LogInfo($"Ultrawide: Adjusted the size of screen transitions.");
                     }
                 }
             }
@@ -447,7 +457,7 @@ namespace HundredHeroesFix
                 {
                     // Set background colour to black instead of blue. Makes the void outside of building stand out less, also good for OLEDs?
                     __instance.MainCamera.backgroundColor = Color.black;
-                    Log.LogInfo("Changed background colour of Main Camera.");
+                    Log.LogInfo("Ultrawide: Changed background colour of Main Camera.");
                 }
             }
         }
@@ -467,7 +477,6 @@ namespace HundredHeroesFix
                     3 => InputManager.InputDeviceType.XInput,
                     _ => InputManager.InputDeviceType.XInput,
                 };
-
                 __instance._deviceType = controllerStyle;
             }
         }
@@ -479,13 +488,13 @@ namespace HundredHeroesFix
             [HarmonyPostfix]
             public static void GraphicalTweaks()
             {
-                Log.LogInfo($"Applying graphical tweaks");
                 var URPAsset = UniversalRenderPipeline.asset;
                 if (URPAsset != null)
                 {
                     URPAsset.renderScale = fRenderScale.Value; // 1f default
+                    Log.LogInfo($"Graphical Tweaks: Set render scale to {URPAsset.renderScale}");
                     URPAsset.shadowDistance = fShadowDistance.Value; // 150f high
-
+                    Log.LogInfo($"Graphical Tweaks: Set shadow distance to {URPAsset.shadowDistance}");
                     var shadowRes = iShadowResolution.Value switch
                     {
                         1 => 256,
@@ -497,8 +506,11 @@ namespace HundredHeroesFix
                         _ => 1024,
                     };
                     URPAsset.mainLightShadowmapResolution = shadowRes; // 1024 high
+                    Log.LogInfo($"Graphical Tweaks: Set main light shadowmap resolution to {URPAsset.mainLightShadowmapResolution}");
                     URPAsset.additionalLightsShadowmapResolution = shadowRes; // 1024 high
+                    Log.LogInfo($"Graphical Tweaks: Set additional lights shadowmap resolution to {URPAsset.additionalLightsShadowmapResolution}");
                     URPAsset.shadowCascadeCount = iShadowCascades.Value; // 3 high
+                    Log.LogInfo($"Graphical Tweaks: Set shadow cascades to {URPAsset.shadowCascadeCount}");
                 }
             }
 
@@ -514,7 +526,7 @@ namespace HundredHeroesFix
                         var UACD = __instance.MainCamera.GetComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>();
                         UACD.antialiasing = AntialiasingMode.SubpixelMorphologicalAntiAliasing;
                         UACD.antialiasingQuality = AntialiasingQuality.High;
-                        Log.LogInfo("Enabled high quality SMAA on Main Camera.");
+                        Log.LogInfo("Graphical Tweaks: Enabled high quality SMAA on Main Camera.");
                     }
                 }
             }
@@ -530,7 +542,7 @@ namespace HundredHeroesFix
                     if (vignette)
                     {
                         vignette.active = false;
-                        Log.LogInfo($"Disabled vignette on {__instance.gameObject.name}.");
+                        Log.LogInfo($"Graphical Tweaks: Disabled vignette on {__instance.gameObject.name}.");
                     }
                 }
 
@@ -540,7 +552,7 @@ namespace HundredHeroesFix
                     if (ca)
                     {
                         ca.active = false;
-                        Log.LogInfo($"Disabled chromatic aberration on {__instance.gameObject.name}.");
+                        Log.LogInfo($"Graphical Tweaks: Disabled chromatic aberration on {__instance.gameObject.name}.");
                     }
                 }
             }
