@@ -184,12 +184,11 @@ namespace HundredHeroesFix
             }
 
             // Apply patches
+            Log.LogInfo($"Patches: Applying resolution patch.");
             Harmony.CreateAndPatchAll(typeof(ResolutionPatch));
-            if (bSkipIntroLogos.Value || bSkipOpeningMovie.Value)
-            {
-                Log.LogInfo($"Patches: Applying skip intro patch.");
-                Harmony.CreateAndPatchAll(typeof(SkipIntroPatch));
-            }
+            Log.LogInfo($"Patches: Applying skip intro patch.");
+            Harmony.CreateAndPatchAll(typeof(SkipIntroPatch));
+
             if (fAspectRatio > fNativeAspect)
             {
                 Log.LogInfo($"Patches: Applying ultrawide patch.");
@@ -215,6 +214,17 @@ namespace HundredHeroesFix
         [HarmonyPatch]
         public class SkipIntroPatch
         {
+            // Enable skippable intro
+            [HarmonyPatch(typeof(UI.Title.Context), nameof(UI.Title.Context.Initialize))]
+            [HarmonyPrefix]
+            public static void LogoSkip(UI.Title.Context __instance)
+            {
+                if (__instance != null)
+                {
+                    __instance.ChangeLogoSkipEnable(true);
+                }
+            }
+
             // Skip intro logos
             [HarmonyPatch(typeof(UI.Title.TitleLogoSequenceController), nameof(UI.Title.TitleLogoSequenceController.FadeInOut))]
             [HarmonyPrefix]
@@ -236,7 +246,7 @@ namespace HundredHeroesFix
             {
                 if (__result == true && bSkipOpeningMovie.Value && !bHasSkippedOpeningMovie)
                 {
-                    __instance.Stop();
+                    //__instance.Stop();
                     // Only skip it the first time in case someone wants to idle the main menu and watch it again I guess?
                     bHasSkippedOpeningMovie = true;
                     Log.LogInfo($"Intro Skip: Skipped opening movie.");
