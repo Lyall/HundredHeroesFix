@@ -36,6 +36,7 @@ namespace HundredHeroesFix
 
         // Graphical Tweaks
         public static ConfigEntry<bool> bGraphicalTweaks;
+        public static ConfigEntry<bool> bVsync;
         public static ConfigEntry<float> fRenderScale;
         public static ConfigEntry<int> iAnisotropicFiltering;
         public static ConfigEntry<float> fShadowDistance;
@@ -87,6 +88,12 @@ namespace HundredHeroesFix
                                 "Set to true for fullscreen or false for windowed.");
 
             // Features
+
+            bVsync = Config.Bind("Vsync",
+                                "Enabled",
+                                true,
+                                "Set vsync on/off");
+
             bSkipIntroLogos = Config.Bind("Intro Skip",
                                 "SkipLogos",
                                 true,
@@ -288,6 +295,26 @@ namespace HundredHeroesFix
                     __instance.ChangeLogoSkipEnable(true);
                     Log.LogInfo($"Intro Skip: Enabled skippable logos.");
                 }
+            }
+
+            // Set vsync/target framerate
+            [HarmonyPatch(typeof(DisplaySetting), nameof(DisplaySetting.UpdateFrameRate))]
+            [HarmonyPostfix]
+            public static void SetVSync()
+            {
+                if (bVsync.Value)
+                {
+                    QualitySettings.vSyncCount = 1;
+                    Log.LogInfo($"Misc: Enabled VSync.");
+                }
+                else if (!bVsync.Value)
+                {
+                    QualitySettings.vSyncCount = 0;
+                    Log.LogInfo($"Misc: Disabled VSync.");
+                }
+
+                // Uncap framerate when vsync is disabled. Has no effect with VSync on.
+                Application.targetFrameRate = 0;
             }
         }
 
@@ -661,6 +688,7 @@ namespace HundredHeroesFix
                 }
             }
 
+            // Enabled SMAA on main camera
             [HarmonyPatch(typeof(FieldCamera), nameof(FieldCamera.Awake))]
             [HarmonyPostfix]
             public static void AntiAliasing(FieldCamera __instance)
