@@ -173,8 +173,6 @@ namespace HundredHeroesFix
             // Calculate aspect ratio
             fAspectRatio = (float)iCustomResX.Value / iCustomResY.Value;
             fAspectMultiplier = fAspectRatio / fNativeAspect;
-            fNativeWidth = (float)iCustomResY.Value * fNativeAspect;
-            fNativeHeight = (float)iCustomResX.Value / fNativeAspect;
 
             // HUD variables
             fHUDWidth = (float)iCustomResY.Value * fNativeAspect;
@@ -186,8 +184,17 @@ namespace HundredHeroesFix
                 fHUDWidth = (float)iCustomResX.Value;
                 fHUDHeight = (float)iCustomResX.Value / fNativeAspect;
                 fHUDWidthOffset = 0;
-                fHUDHeightOffset = (float)(iCustomResX.Value - fHUDHeight) / 2;
+                fHUDHeightOffset = (float)(iCustomResY.Value - fHUDHeight) / 2;
             }
+
+            // Log HUD variables/aspect ratio
+            Log.LogInfo($"HUD Variables: Resolution = {iCustomResX.Value}x{iCustomResY.Value}");
+            Log.LogInfo($"HUD Variables: fAspectRatio = {fAspectRatio}");
+            Log.LogInfo($"HUD Variables: fAspectMultiplier = {fAspectMultiplier}");
+            Log.LogInfo($"HUD Variables: fHUDWidth = {fHUDWidth}");
+            Log.LogInfo($"HUD Variables: fHUDHeight = {fHUDHeight}"); 
+            Log.LogInfo($"HUD Variables: fHUDWidthOffset = {fHUDWidthOffset}");
+            Log.LogInfo($"HUD Variables: fHUDHeightOffset = {fHUDHeightOffset}");
 
             // Apply patches
             Log.LogInfo($"Patches: Applying resolution patch.");
@@ -195,10 +202,10 @@ namespace HundredHeroesFix
             Log.LogInfo($"Patches: Applying miscellaneous patch.");
             Harmony.CreateAndPatchAll(typeof(MiscPatch));
 
-            if (fAspectRatio > fNativeAspect)
+            if (fAspectRatio != fNativeAspect)
             {
-                Log.LogInfo($"Patches: Applying ultrawide patch.");
-                Harmony.CreateAndPatchAll(typeof(UltrawidePatch));
+                Log.LogInfo($"Patches: Applying aspect ratio patch.");
+                Harmony.CreateAndPatchAll(typeof(AspectRatioPatch));
             }
             if (bSkipIntroLogos.Value || bSkipOpeningMovie.Value)
             {
@@ -305,7 +312,7 @@ namespace HundredHeroesFix
         }
 
         [HarmonyPatch]
-        public class UltrawidePatch
+        public class AspectRatioPatch
         {
             // Disable camera viewport from being adjusted
             [HarmonyPatch(typeof(CameraViewPortFitting), nameof(CameraViewPortFitting.AdjustCameraViewport))]
@@ -314,6 +321,27 @@ namespace HundredHeroesFix
             {
                 // There's possibly a better way of doing this.
                 return false;
+            }
+
+            // Change main camera background colour and set correct FOV for <16:9
+            [HarmonyPatch(typeof(FieldCamera), nameof(FieldCamera.Awake))]
+            [HarmonyPostfix]
+            public static void AntiAliasing(FieldCamera __instance)
+            {
+                if (__instance.MainCamera != null)
+                {
+                    // Set background colour to black instead of blue. Makes the void outside of building stand out less, also good for OLEDs?
+                    __instance.MainCamera.backgroundColor = Color.black;
+                    Log.LogInfo("AspectRatio: Changed background colour of Main Camera.");
+
+                    if (fAspectRatio < fNativeAspect)
+                    {
+                        __instance.MainCamera.usePhysicalProperties = true;
+                        __instance.MainCamera.gateFit = Camera.GateFitMode.Horizontal;
+                        __instance.MainCamera.sensorSize = new Vector2(16f, 9f);
+                        Log.LogInfo("AspectRatio: Set Main Camera gate fit mode to horizontal.");
+                    }
+                }
             }
 
             // Offset and span the add unit screen
@@ -330,11 +358,29 @@ namespace HundredHeroesFix
                     }
 
                     // Span background elements
-                    __instance.transform.GetChild(0).localScale = new Vector3(1f * fAspectMultiplier, 1f, 1f);
-                    __instance.transform.GetChild(1).localScale = new Vector3(1f * fAspectMultiplier, 1f, 1f);
-                    __instance.transform.GetChild(2).localScale = new Vector3(1f * fAspectMultiplier, 1f, 1f);
-                    Log.LogInfo($"Ultrawide: Offset and spanned add unit screen.");
+                    __instance.transform.GetChild(0).localScale = new Vector3(1f * fAspectMultiplier, 1f, 1f); // blackBarDown
+                    __instance.transform.GetChild(1).localScale = new Vector3(1f * fAspectMultiplier, 1f, 1f); // blackBarUp
+                    __instance.transform.GetChild(2).localScale = new Vector3(1f * fAspectMultiplier, 1f, 1f); // blackSheet
                 }
+                else if (fAspectRatio < fNativeAspect)
+                {
+                    if (__instance.gameObject.transform.localPosition.y == 0)
+                    {
+                        float fHeightOffset = (float)((1920 / fAspectRatio) - 1080) / 2;
+                        __instance.gameObject.transform.AddLocalPositionY(-fHeightOffset);
+                    }
+
+                    // Span background elements
+                    float fPosAnchorOffset = (float)1f + (fHUDHeightOffset / iCustomResY.Value);
+                    float fNegAnchorOffset = (float)1f - (fHUDHeightOffset / iCustomResY.Value);
+                    __instance.transform.GetChild(0).GetComponent<RectTransform>().anchorMax = new Vector2(0f, fNegAnchorOffset); // blackBarDown
+                    __instance.transform.GetChild(0).GetComponent<RectTransform>().anchorMin = new Vector2(0f, fNegAnchorOffset); // blackBarDown
+                    __instance.transform.GetChild(1).GetComponent<RectTransform>().anchorMax = new Vector2(0f, fPosAnchorOffset); // blackBarUp
+                    __instance.transform.GetChild(1).GetComponent<RectTransform>().anchorMin = new Vector2(0f, fPosAnchorOffset); // blackBarUp
+                    __instance.transform.GetChild(2).localScale = new Vector3(1f, 1f / fAspectMultiplier, 1f); ; // blackSheet
+                }
+
+                Log.LogInfo($"AspectRatio: Offset and spanned add unit screen.");
             }
 
             // Offset blacksmith build up screen
@@ -348,14 +394,17 @@ namespace HundredHeroesFix
                     {
                         float fWidthOffset = (float)((1080 * fAspectRatio) - 1920) / 2;
                         __instance.gameObject.GetComponent<RectTransform>().AddLocalPositionX(fWidthOffset);
+
                         if (__instance.gameObject.transform.GetChild(0).gameObject.transform.GetChild(0).gameObject.name == "BGblackLeft")
                         {
                             var localPos = __instance.gameObject.transform.GetChild(0).gameObject.transform.GetChild(0).gameObject.GetComponent<RectTransform>().localPosition;
                             localPos.x -= fWidthOffset;
+
                             __instance.gameObject.transform.GetChild(0).gameObject.transform.GetChild(0).gameObject.GetComponent<RectTransform>().localPosition = localPos;
                             __instance.gameObject.transform.GetChild(0).gameObject.transform.GetChild(0).gameObject.GetComponent<RectTransform>().localScale = new Vector3(1f * fAspectMultiplier, 1f, 1f);
                         }
-                        Log.LogInfo($"Ultrawide: Offset blacksmith buildup screen.");
+
+                        Log.LogInfo($"AspectRatio: Offset blacksmith buildup screen.");
                     }
                 }
             }
@@ -365,17 +414,26 @@ namespace HundredHeroesFix
             [HarmonyPostfix]
             public static void InnCanvasPos(InnCanvas __instance)
             {
-                if (fAspectRatio > fNativeAspect)
+                if (__instance._header != null && __instance._dialogRoot != null)
                 {
-                    if (__instance._header != null && __instance._dialogRoot != null)
+                    if (fAspectRatio > fNativeAspect)
                     {
-                        float fAnchorOffset = (float)((fAspectMultiplier - 1) / 2) / fAspectMultiplier;
+                        float fAnchorOffset = (float)fHUDWidthOffset / iCustomResX.Value;
                         __instance._dialogRoot.gameObject.GetComponent<RectTransform>().anchorMax = new Vector2(fAnchorOffset, 1f);
                         __instance._dialogRoot.gameObject.GetComponent<RectTransform>().anchorMin = new Vector2(fAnchorOffset, 1f);
                         __instance._header.gameObject.GetComponent<RectTransform>().anchorMax = new Vector2(fAnchorOffset, 1f);
                         __instance._header.gameObject.GetComponent<RectTransform>().anchorMin = new Vector2(fAnchorOffset, 1f);
-                        Log.LogInfo($"Ultrawide: Offset inn screen.");
                     }
+                    else if (fAspectRatio < fNativeAspect)
+                    {
+                        float fAnchorOffset = (float)1f - (fHUDHeightOffset / iCustomResY.Value);
+                        __instance._dialogRoot.gameObject.GetComponent<RectTransform>().anchorMax = new Vector2(0f, fAnchorOffset);
+                        __instance._dialogRoot.gameObject.GetComponent<RectTransform>().anchorMin = new Vector2(0f, fAnchorOffset);
+                        __instance._header.gameObject.GetComponent<RectTransform>().anchorMax = new Vector2(0f, fAnchorOffset);
+                        __instance._header.gameObject.GetComponent<RectTransform>().anchorMin = new Vector2(0f, fAnchorOffset);
+                    }
+
+                    Log.LogInfo($"AspectRatio: Offset inn screen.");
                 }
             }
 
@@ -392,24 +450,8 @@ namespace HundredHeroesFix
                         {
                             __instance.referenceResolution = new Vector2(1920f, 1080f);
                             __instance.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
-                            Log.LogInfo($"Ultrawide: Fixed broken screen {__instance.transform.parent.gameObject.name}.");
+                            Log.LogInfo($"AspectRatio: Fixed broken screen {__instance.transform.parent.gameObject.name}.");
                         }
-                    }
-                }
-            }
-
-            // Span screen fades
-            [HarmonyPatch(typeof(Framework.FadeOrganizer), nameof(Framework.FadeOrganizer.Start))]
-            [HarmonyPostfix]
-            public static void FadeFix(Framework.FadeOrganizer __instance)
-            {
-                if (fAspectRatio > fNativeAspect)
-                {
-                    if (__instance._fadeImage != null)
-                    {
-                        var fadeTransform = __instance._fadeImage.gameObject.GetComponent<RectTransform>();
-                        fadeTransform.localScale = new Vector3(1f * fAspectMultiplier, 1f, 1f);
-                        Log.LogInfo($"Ultrawide: Scaled fade.");
                     }
                 }
             }
@@ -419,14 +461,37 @@ namespace HundredHeroesFix
             [HarmonyPostfix]
             public static void VignetteFix(UnityEngine.Rendering.Volume __instance)
             {
-                __instance.profile.TryGet(out Vignette vignette);
-                if (vignette)
+                if (fAspectRatio > fNativeAspect)
                 {
-                    if (fAspectRatio > fNativeAspect)
+                    __instance.profile.TryGet(out Vignette vignette);
+                    if (vignette)
                     {
                         vignette.intensity.value /= fAspectMultiplier;
-                        Log.LogInfo($"Ultrawide: Changed intestity of {__instance.gameObject.name}'s vignette to {vignette.intensity.value}");
+                        Log.LogInfo($"AspectRatio: Changed intestity of {__instance.gameObject.name}'s vignette to {vignette.intensity.value}");
                     }
+                }
+            }
+
+            // Span screen fades
+            [HarmonyPatch(typeof(Framework.FadeOrganizer), nameof(Framework.FadeOrganizer.Start))]
+            [HarmonyPostfix]
+            public static void FadeFix(Framework.FadeOrganizer __instance)
+            {
+                if (__instance._fadeImage != null)
+                {
+                    var fadeTransform = __instance._fadeImage.gameObject.GetComponent<RectTransform>();
+
+                    if (fAspectRatio > fNativeAspect)
+                    {
+                        fadeTransform.localScale = new Vector3(1f * fAspectMultiplier, 1f, 1f);
+                    }
+                    else if (fAspectRatio < fNativeAspect)
+                    {
+                        //fadeTransform.localScale = new Vector3(1f, 1f / fAspectMultiplier, 1f);
+                        // Not necessary
+                    }
+
+                    Log.LogInfo($"AspectRatio: Scaled fade.");
                 }
             }
 
@@ -435,25 +500,41 @@ namespace HundredHeroesFix
             [HarmonyPostfix]
             public static void FilterFix(Image __instance)
             {
-                if (fAspectRatio > fNativeAspect)
+                if (__instance.gameObject.name == "filter" || __instance.gameObject.name == "Filter" || __instance.gameObject.name == "FIlter" || __instance.gameObject.name == "blackSheet" || __instance.gameObject.name == "bgFilter" || __instance.gameObject.name == "filterBlack")
                 {
-                    if (__instance.gameObject.name == "filter" || __instance.gameObject.name == "Filter" || __instance.gameObject.name == "FIlter" || __instance.gameObject.name == "blackSheet" || __instance.gameObject.name == "bgFilter" || __instance.gameObject.name == "filterBlack")
+                    var transform = __instance.gameObject.GetComponent<RectTransform>();
+
+                    if (transform.sizeDelta == new Vector2(1920f, 1080f) || transform.sizeDelta == new Vector2(2000f, 1200f))
                     {
-                        var transform = __instance.gameObject.GetComponent<RectTransform>();
-                        if (transform.sizeDelta == new Vector2(1920f, 1080f) || transform.sizeDelta == new Vector2(2000f, 1200f))
+                        if (fAspectRatio > fNativeAspect)
                         {
                             transform.sizeDelta = new Vector2(1080f * fAspectRatio, 1080f);
-                            Log.LogInfo($"Ultrawide: Adjusted the size of {__instance.gameObject.transform.parent.gameObject.name}->{__instance.gameObject.name}");
                         }
-                    }
+                        else if (fAspectRatio < fNativeAspect)
+                        {
+                            transform.sizeDelta = new Vector2(1920f, 1920f / fAspectRatio);
+                        }
 
-                    if (__instance.gameObject.name == "statusBlind")
+                        Log.LogInfo($"AspectRatio: Adjusted the size of {__instance.gameObject.transform.parent.gameObject.name}->{__instance.gameObject.name}");
+                    }
+                }
+
+                if (__instance.gameObject.name == "statusBlind")
+                {
+                    float fWidthOffset = (float)((1080 * fAspectRatio) - 1920) / 2;
+                    var transform = __instance.gameObject.GetComponent<RectTransform>();
+
+                    if (fAspectRatio > fNativeAspect)
                     {
-                        float fWidthOffset = (float)((1080 * fAspectRatio) - 1920) / 2;
-                        var transform = __instance.gameObject.GetComponent<RectTransform>();
                         transform.localScale = new Vector3(fAspectMultiplier + (fAspectMultiplier - 1f), 1f, 1f);
                         transform.anchoredPosition = new Vector2(50f + fWidthOffset, -50f);
                     }
+                    else if (fAspectRatio < fNativeAspect)
+                    {
+                        transform.localScale = new Vector3(1f, 1f / fAspectMultiplier, 1f);
+                    }
+
+                    Log.LogInfo($"AspectRatio: Adjusted the size of {__instance.gameObject.transform.parent.gameObject.name}->{__instance.gameObject.name}");
                 }
             }
 
@@ -462,14 +543,19 @@ namespace HundredHeroesFix
             [HarmonyPostfix]
             public static void MapBackground(UIBackgroundBlur __instance)
             {
-                if (fAspectRatio > fNativeAspect)
+                var transform = __instance.GetComponent<RectTransform>();
+
+                if (transform.sizeDelta == new Vector2(1920f, 1080f))
                 {
-                    var transform = __instance.GetComponent<RectTransform>();
-                    if (transform.sizeDelta == new Vector2(1920f, 1080f))
+                    if (fAspectRatio > fNativeAspect)
                     {
                         transform.sizeDelta = new Vector2(1080f * fAspectRatio, 1080f);
-                        Log.LogInfo($"Ultrawide: Adjusted the size of background blur");
                     }
+                    else if (fAspectRatio < fNativeAspect)
+                    {
+                        transform.sizeDelta = new Vector2(1920f, 1920f / fAspectRatio);
+                    }
+                    Log.LogInfo($"AspectRatio: Adjusted the size of background blur to {transform.sizeDelta}");
                 }
             }
 
@@ -478,14 +564,16 @@ namespace HundredHeroesFix
             [HarmonyPostfix]
             public static void TutorialBackground(Tutorial __instance)
             {
-                if (fAspectRatio > fNativeAspect)
+                if (__instance.gameObject.transform.GetChild(0) != null)
                 {
-                    if (__instance.gameObject.transform.GetChild(0) != null)
+                    var transform = __instance.gameObject.transform.GetChild(0).GetComponent<RectTransform>();
+
+                    if (fAspectRatio != fNativeAspect)
                     {
-                        var transform = __instance.gameObject.transform.GetChild(0).GetComponent<RectTransform>();
                         transform.sizeDelta = new Vector2(10000f, 10000f); // This one is already 3000x3000 so it's basically a giant square.
-                        Log.LogInfo($"Ultrawide: Adjusted the size of tutorial background");
                     }
+
+                    Log.LogInfo($"AspectRatio: Adjusted the size of tutorial background to {transform.sizeDelta}");
                 }
             }
 
@@ -494,27 +582,21 @@ namespace HundredHeroesFix
             [HarmonyPostfix]
             public static void ScreenWipes(Transition.ScreenFadeSetting __instance)
             {
-                if (fAspectRatio > fNativeAspect)
+                if (__instance._fader != null)
                 {
-                    if (__instance._fader != null)
-                    {
-                        var transform = __instance._fader.transform.parent.GetComponent<Transform>();
-                        transform.localScale = new Vector3(1.78f * fAspectMultiplier, 1.78f, 1.78f);
-                        Log.LogInfo($"Ultrawide: Adjusted the size of screen transitions.");
-                    }
-                }
-            }
+                    var transform = __instance._fader.transform.parent.GetComponent<Transform>();
 
-            // Change main camera background colour
-            [HarmonyPatch(typeof(FieldCamera), nameof(FieldCamera.Awake))]
-            [HarmonyPostfix]
-            public static void AntiAliasing(FieldCamera __instance)
-            {
-                if (__instance.MainCamera != null)
-                {
-                    // Set background colour to black instead of blue. Makes the void outside of building stand out less, also good for OLEDs?
-                    __instance.MainCamera.backgroundColor = Color.black;
-                    Log.LogInfo("Ultrawide: Changed background colour of Main Camera.");
+                    if (fAspectRatio > fNativeAspect)
+                    {
+                        transform.localScale = new Vector3(1.78f * fAspectMultiplier, 1.78f, 1.78f);
+                    }
+                    else if (fAspectRatio < fNativeAspect)
+                    {
+                        //transform.localScale = new Vector3(1.78f * fAspectMultiplier, 1.78f, 1.78f);
+                        // Not necessary
+                    }
+
+                    Log.LogInfo($"AspectRatio: Adjusted the size of screen transitions.");
                 }
             }
         }
