@@ -136,7 +136,7 @@ namespace HundredHeroesFix
                                 "RenderScale",
                                 (float)1f,
                                 new ConfigDescription("Set Render Scale. Higher than 1 downsamples and lower than 1 upsamples.",
-                                new AcceptableValueRange<float>(0.5f, 4f)));
+                                new AcceptableValueRange<float>(0.1f, 2f)));
 
             iAnisotropicFiltering = Config.Bind("Graphical Tweaks",
                                 "AnisotropicFiltering",
@@ -677,6 +677,7 @@ namespace HundredHeroesFix
                         6 => 8192,
                         _ => 1024,
                     };
+
                     URPAsset.shadowDistance = fShadowDistance.Value; // 150f high
                     Log.LogInfo($"Graphical Tweaks: Set shadow distance to {URPAsset.shadowDistance}");
                     URPAsset.mainLightShadowmapResolution = shadowRes; // 1024 high
@@ -688,7 +689,7 @@ namespace HundredHeroesFix
                 }
             }
 
-            // Enabled SMAA on main camera
+            // Enable SMAA on main camera
             [HarmonyPatch(typeof(FieldCamera), nameof(FieldCamera.Awake))]
             [HarmonyPostfix]
             public static void AntiAliasing(FieldCamera __instance)
@@ -699,8 +700,10 @@ namespace HundredHeroesFix
                     {
                         __instance.MainCamera.backgroundColor = Color.black;
                         var UACD = __instance.MainCamera.GetComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>();
+
                         UACD.antialiasing = AntialiasingMode.SubpixelMorphologicalAntiAliasing;
                         UACD.antialiasingQuality = AntialiasingQuality.High;
+
                         Log.LogInfo("Graphical Tweaks: Enabled high quality SMAA on Main Camera.");
                     }
                 }
