@@ -2,15 +2,16 @@
 [![Patreon-Button](https://github.com/Lyall/HundredHeroesFix/assets/695941/940fe808-0708-4284-bd4c-40c55573df20)](https://www.patreon.com/Wintermance) [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/W7W01UAI9)<br />
 [![Github All Releases](https://img.shields.io/github/downloads/Lyall/HundredHeroesFix/total.svg)](https://github.com/Lyall/HundredHeroesFix/releases)
 
-This is a BepInEx plugin for Eiyuden Chronicle: Hundred Heroes that adds custom resolutions, ultrawide support and more.<br />
+This is a BepInEx plugin for Eiyuden Chronicle: Hundred Heroes that adds custom resolutions, ultrawide/narrower support and more.<br />
 
 ## Features
 - Custom resolution support.
-- Ultrawide support.
+- Ultrawide and narrower aspect ratio support.
 - Intro skip.
-- Graphical tweaks like render scale, shadow resolution and distance.
+- Graphical tweaks like render scale, shadow resolution/distance and vignette/CA toggles.
+- Hide mouse cursor.
+- Remove two-second delay on voiced dialog auto-advancing.
 - Force specific controller button icons (DS4/DS5/Xbox).
-- Disable mouse cursor.
 
 ## Installation
 - Grab the latest release of HundredHeroesFix from [here.](https://github.com/Lyall/HundredHeroesFix/releases)
@@ -29,7 +30,7 @@ Please report any issues you see.
 This list will contain bugs which may or may not be fixed.
 
 - When using an ultrawide display, the HUD is a mixture of spanned and 16:9.
-- Some screens may be aligned to the left or zoomed in when using an ultrawide display.
+- Some screens may be mis-aligned or zoomed in when using an ultrawide/narrower display.
 
 ## Screenshots
 
