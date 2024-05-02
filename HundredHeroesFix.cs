@@ -32,7 +32,7 @@ namespace HundredHeroesFix
         public static ConfigEntry<bool> bDisableCursor;
         public static ConfigEntry<bool> bControllerGlyphs;
         public static ConfigEntry<int> iControllerStyle;
-        public static ConfigEntry<bool> bAutoDialogDelay;
+        public static ConfigEntry<bool> bAutoVoiceDialog;
 
         // Graphical Tweaks
         public static ConfigEntry<bool> bGraphicalTweaks;
@@ -109,10 +109,10 @@ namespace HundredHeroesFix
                                 true,
                                 "Set to true to disable showing the mouse cursor.");
 
-            bAutoDialogDelay = Config.Bind("Disable Dialog Auto-Advance Delay",
+            bAutoVoiceDialog = Config.Bind("Auto-Advance Voiced Dialog",
                                 "Enabled",
                                 true,
-                                "Removes the forced 2-second delay on auto-advancing voiced dialog.");
+                                "Enables auto-advancing voiced dialog and removes the forced 2-second delay.");
 
             bControllerGlyphs = Config.Bind("Force Controller Icons",
                                 "Enabled",
@@ -274,14 +274,27 @@ namespace HundredHeroesFix
             // Remove 2 second delay from auto-advancing dialogue
             [HarmonyPatch(typeof(TextData.UI.KaeruText), nameof(TextData.UI.KaeruText.AutomaticSubmit))]
             [HarmonyPrefix]
-            public static void RemoveDialogueDelay(TextData.UI.KaeruText __instance, ref float __0)
+            public static void RemoveDialogueDelaya(TextData.UI.KaeruText __instance, ref float __0)
             {
                 var sndMngr = SoundManager.Instance;
                 // Only remove dialogue delay for voiced lines
-                if (bAutoDialogDelay.Value && sndMngr.UseEventSE)
+                if (bAutoVoiceDialog.Value && sndMngr.UseEventSE)
                 {
                     // 100ms delay seems about right?
                     __0 = 0.1f;
+                }
+            }
+
+            // Always auto-advance voiced dialogue
+            [HarmonyPatch(typeof(TextData.UI.KaeruText), nameof(TextData.UI.KaeruText.IsAuto), MethodType.Getter)]
+            [HarmonyPostfix]
+            public static void RemoveDialogueDelay(ref bool __result)
+            {
+                var sndMngr = SoundManager.Instance;
+                if (bAutoVoiceDialog.Value && sndMngr.UseEventSE)
+                {
+                    // Force auto-advance on for voiced dialogue
+                    __result = true;
                 }
             }
 
