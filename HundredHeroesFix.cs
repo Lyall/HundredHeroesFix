@@ -47,6 +47,7 @@ namespace HundredHeroesFix
         public static ConfigEntry<bool> bEnableSMAA;
         public static ConfigEntry<bool> bDisableChromaticAberration;
         public static ConfigEntry<bool> bDisableVignette;
+        public static ConfigEntry<bool> bDisableColorGrading;
 
         // Aspect Ratio
         public static float fAspectRatio;
@@ -91,7 +92,6 @@ namespace HundredHeroesFix
                                 "Set to true for fullscreen or false for windowed.");
 
             // Features
-
             bVsync = Config.Bind("Vsync",
                                 "Enabled",
                                 true,
@@ -197,12 +197,17 @@ namespace HundredHeroesFix
             bDisableChromaticAberration = Config.Bind("Graphical Tweaks",
                                 "DisableChromaticAberration",
                                 false,
-                                "Set to true to disable chromatic abberation (colour fringing at edges of screen).");
+                                "Set to true to disable chromatic abberation (color fringing at edges of screen).");
 
             bDisableVignette = Config.Bind("Graphical Tweaks",
                                 "DisableVignette",
                                 false,
                                 "Set to true to disable vignette (darkening at edges of screen).");
+
+            bDisableColorGrading = Config.Bind("Graphical Tweaks",
+                                "DisableColorGrading",
+                                false,
+                                "Set to true to disable color grading.");
 
             // Calculate aspect ratio
             fAspectRatio = (float)iCustomResX.Value / iCustomResY.Value;
@@ -308,10 +313,10 @@ namespace HundredHeroesFix
         [HarmonyPatch]
         public class AutoAdvanceDialogPatch
         {
-            // Remove 2 second delay from auto-advancing dialogue
+            // Remove 2 second delay from auto-advancing dialog
             [HarmonyPatch(typeof(TextData.UI.KaeruText), nameof(TextData.UI.KaeruText.AutomaticSubmit))]
             [HarmonyPrefix]
-            public static void RemoveDialogueDelaya(TextData.UI.KaeruText __instance, ref float __0)
+            public static void RemoveDialogDelay(TextData.UI.KaeruText __instance, ref float __0)
             {
                 // Set auto-advance dialog delay
                 if (fAutoAdvanceDelay.Value != 2f)
@@ -320,7 +325,7 @@ namespace HundredHeroesFix
                 }
 
                 var sndMngr = SoundManager.Instance;
-                // Only remove dialogue delay for voiced lines
+                // Only remove dialog delay for voiced lines
                 if (bAutoVoiceDialog.Value && (sndMngr._sePlayer._player.GetStatus() == CriWare.CriAtomExPlayer.Status.Playing))
                 {
                     // 100ms delay seems about right?
@@ -328,15 +333,15 @@ namespace HundredHeroesFix
                 }
             }
 
-            // Always auto-advance voiced dialogue
+            // Always auto-advance voiced dialog
             [HarmonyPatch(typeof(TextData.UI.KaeruText), nameof(TextData.UI.KaeruText.IsAuto), MethodType.Getter)]
             [HarmonyPostfix]
-            public static void RemoveDialogueDelay(ref bool __result)
+            public static void RemoveDialogDelay(ref bool __result)
             {
                 var sndMngr = SoundManager.Instance;
                 if (bAutoVoiceDialog.Value && (sndMngr._sePlayer._player.GetStatus() == CriWare.CriAtomExPlayer.Status.Playing))
                 {
-                    // Force auto-advance on for voiced dialogue
+                    // Force auto-advance on for voiced dialog
                     __result = true;
                 }
             }
@@ -448,16 +453,16 @@ namespace HundredHeroesFix
                 return false;
             }
 
-            // Change main camera background colour and set correct FOV for <16:9
+            // Change main camera background color and set correct FOV for <16:9
             [HarmonyPatch(typeof(UnityEngine.Rendering.Universal.UniversalAdditionalCameraData), nameof(UnityEngine.Rendering.Universal.UniversalAdditionalCameraData.OnAfterDeserialize))]
             [HarmonyPostfix]
             public static void AntiAliasing(UnityEngine.Rendering.Universal.UniversalAdditionalCameraData __instance)
             {
                 if (__instance.gameObject.name == "Main Camera")
                 {
-                    // Set background colour to black instead of blue. Makes the void outside of building stand out less, also good for OLEDs?
+                    // Set background color to black instead of blue. Makes the void outside of building stand out less, also good for OLEDs?
                     __instance.gameObject.GetComponent<Camera>().backgroundColor = Color.black;
-                    Log.LogInfo("AspectRatio: Changed background colour of Main Camera.");
+                    Log.LogInfo("AspectRatio: Changed background color of Main Camera.");
 
                     if (fAspectRatio < fNativeAspect)
                     {
@@ -817,6 +822,16 @@ namespace HundredHeroesFix
             [HarmonyPostfix]
             public static void PostProcessTweaks(UnityEngine.Rendering.Volume __instance)
             {
+                if (bDisableColorGrading.Value)
+                {
+                    __instance.profile.TryGet(out UnityEngine.Rendering.Universal.ColorCurves colorCurves);
+                    if (colorCurves)
+                    {
+                        colorCurves.active = false;
+                        Log.LogInfo($"Graphical Tweaks: Disabled colorCurves on {__instance.gameObject.name}.");
+                    }
+                }
+
                 if (bDisableVignette.Value)
                 {
                     __instance.profile.TryGet(out UnityEngine.Rendering.Universal.Vignette vignette);
