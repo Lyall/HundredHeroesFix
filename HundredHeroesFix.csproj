@@ -24,6 +24,9 @@
     <Reference Include="Assembly-CSharp">
       <HintPath>libs\Assembly-CSharp-nstrip.dll</HintPath>
     </Reference>
+    <Reference Include="CriMw.CriWare.Runtime">
+      <HintPath>libs\CriMw.CriWare.Runtime-nstrip.dll</HintPath>
+    </Reference>
     <Reference Include="Il2Cppmscorlib">
       <HintPath>libs\Il2Cppmscorlib-nstrip.dll</HintPath>
     </Reference>

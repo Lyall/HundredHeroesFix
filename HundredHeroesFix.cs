@@ -32,7 +32,11 @@ namespace HundredHeroesFix
         public static ConfigEntry<bool> bDisableCursor;
         public static ConfigEntry<bool> bControllerGlyphs;
         public static ConfigEntry<int> iControllerStyle;
+
+        // Auto-Advance Tweaks
+        public static ConfigEntry<bool> bAutoAdvanceTweaks;
         public static ConfigEntry<bool> bAutoVoiceDialog;
+        public static ConfigEntry<float> fAutoAdvanceDelay;
 
         // Graphical Tweaks
         public static ConfigEntry<bool> bGraphicalTweaks;
@@ -109,11 +113,6 @@ namespace HundredHeroesFix
                                 true,
                                 "Set to true to disable showing the mouse cursor.");
 
-            bAutoVoiceDialog = Config.Bind("Auto-Advance Voiced Dialog",
-                                "Enabled",
-                                true,
-                                "Enables auto-advancing voiced dialog and removes the forced 2-second delay.");
-
             bControllerGlyphs = Config.Bind("Force Controller Icons",
                                 "Enabled",
                                 false,
@@ -125,6 +124,23 @@ namespace HundredHeroesFix
                                 (int)1,
                                 new ConfigDescription("Set controller icon style. 1 = Dualshock (DS4), 2 = DualSense (DS5), 3 = Xbox",
                                 new AcceptableValueRange<int>(1, 3)));
+
+            // Auto-Advance Tweaks
+            bAutoAdvanceTweaks = Config.Bind("Auto Dialog Advance Tweaks",
+                                "Enabled",
+                                true,
+                                "Enables auto dialog advance tweaks.");
+
+            bAutoVoiceDialog = Config.Bind("Auto-Advance Tweaks",
+                                "AutoAdvanceVoicedDialog",
+                                true,
+                                "Enables auto-advancing voiced dialog and removes the forced 2-second delay.");
+
+            fAutoAdvanceDelay = Config.Bind("Auto-Advance Tweaks",
+                                "AutoAdvanceDelay",
+                                (float)2f,
+                                new ConfigDescription("Set auto-advance dialog delay. Controls when non-voiced dialog automatically moves to the next line.",
+                                new AcceptableValueRange<float>(0f, 10f)));
 
             // Graphical Tweaks
             bGraphicalTweaks = Config.Bind("Graphical Tweaks",
@@ -229,6 +245,11 @@ namespace HundredHeroesFix
                 Log.LogInfo($"Patches: Applying graphical tweaks patch.");
                 Harmony.CreateAndPatchAll(typeof(GraphicsTweakPatch));
             }
+            if (bAutoAdvanceTweaks.Value)
+            {
+                Log.LogInfo($"Patches: Applying dialog auto-advance tweaks patch.");
+                Harmony.CreateAndPatchAll(typeof(AutoAdvanceTweakPatch));
+            }
             if (bDisableCursor.Value)
             {
                 Cursor.visible = false;
@@ -269,16 +290,22 @@ namespace HundredHeroesFix
         }
 
         [HarmonyPatch]
-        public class MiscPatch
+        public class AutoAdvanceTweakPatch
         {
             // Remove 2 second delay from auto-advancing dialogue
             [HarmonyPatch(typeof(TextData.UI.KaeruText), nameof(TextData.UI.KaeruText.AutomaticSubmit))]
             [HarmonyPrefix]
             public static void RemoveDialogueDelaya(TextData.UI.KaeruText __instance, ref float __0)
             {
+                // Set auto-advance dialog delay
+                if (fAutoAdvanceDelay.Value != 2f)
+                {
+                    __0 = fAutoAdvanceDelay.Value;
+                }
+
                 var sndMngr = SoundManager.Instance;
                 // Only remove dialogue delay for voiced lines
-                if (bAutoVoiceDialog.Value && sndMngr.UseEventSE)
+                if (bAutoVoiceDialog.Value && (sndMngr._sePlayer._player.GetStatus() == CriWare.CriAtomExPlayer.Status.Playing))
                 {
                     // 100ms delay seems about right?
                     __0 = 0.1f;
@@ -291,13 +318,18 @@ namespace HundredHeroesFix
             public static void RemoveDialogueDelay(ref bool __result)
             {
                 var sndMngr = SoundManager.Instance;
-                if (bAutoVoiceDialog.Value && sndMngr.UseEventSE)
+                if (bAutoVoiceDialog.Value && (sndMngr._sePlayer._player.GetStatus() == CriWare.CriAtomExPlayer.Status.Playing))
                 {
                     // Force auto-advance on for voiced dialogue
                     __result = true;
                 }
             }
+        }
 
+        [HarmonyPatch]
+        public class MiscPatch
+        {
+            
             // Enable skippable intro
             [HarmonyPatch(typeof(UI.Title.Context), nameof(UI.Title.Context.Initialize))]
             [HarmonyPrefix]
