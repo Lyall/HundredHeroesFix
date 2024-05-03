@@ -10,8 +10,8 @@ using UnityEngine.UI;
 using Common.UI;
 using Kaeru.UI;
 using GameData;
-using FieldStage;
 using System;
+using Battle.Command;
 
 namespace HundredHeroesFix
 {
@@ -37,6 +37,10 @@ namespace HundredHeroesFix
         public static ConfigEntry<bool> bAutoAdvanceTweaks;
         public static ConfigEntry<bool> bAutoVoiceDialog;
         public static ConfigEntry<float> fAutoAdvanceDelay;
+
+        // Auto-Battle Tweaks
+        public static ConfigEntry<bool> bAutoBattleTweaks;
+        public static ConfigEntry<float> fAutoBattleSpeed;
 
         // Graphical Tweaks
         public static ConfigEntry<bool> bGraphicalTweaks;
@@ -125,18 +129,30 @@ namespace HundredHeroesFix
                                 new ConfigDescription("Set controller icon style. 1 = Dualshock (DS4), 2 = DualSense (DS5), 3 = Xbox",
                                 new AcceptableValueRange<int>(1, 3)));
 
+            // Auto-Battle Tweaks
+            bAutoBattleTweaks = Config.Bind("Auto Battle Tweaks",
+                                "Enabled",
+                                false,
+                                "Enables auto battle tweaks.");
+
+            fAutoBattleSpeed = Config.Bind("Auto Battle Tweaks",
+                               "AutoBattleSpeed",
+                               (float)4f,
+                               new ConfigDescription("Set auto-battle speed.",
+                               new AcceptableValueRange<float>(1f, 8f))); // 1x to 8x speed seems reasonable.
+
             // Auto-Advance Tweaks
             bAutoAdvanceTweaks = Config.Bind("Auto Dialog Advance Tweaks",
                                 "Enabled",
                                 true,
                                 "Enables auto dialog advance tweaks.");
 
-            bAutoVoiceDialog = Config.Bind("Auto-Advance Tweaks",
+            bAutoVoiceDialog = Config.Bind("Auto Dialog Advance Tweaks",
                                 "AutoAdvanceVoicedDialog",
                                 true,
                                 "Enables auto-advancing voiced dialog and removes the forced 2-second delay.");
 
-            fAutoAdvanceDelay = Config.Bind("Auto-Advance Tweaks",
+            fAutoAdvanceDelay = Config.Bind("Auto Dialog Advance Tweaks",
                                 "AutoAdvanceDelay",
                                 (float)2f,
                                 new ConfigDescription("Set auto-advance dialog delay. Controls when non-voiced dialog automatically moves to the next line.",
@@ -247,8 +263,13 @@ namespace HundredHeroesFix
             }
             if (bAutoAdvanceTweaks.Value)
             {
-                Log.LogInfo($"Patches: Applying dialog auto-advance tweaks patch.");
-                Harmony.CreateAndPatchAll(typeof(AutoAdvanceTweakPatch));
+                Log.LogInfo($"Patches: Applying dialog auto-advance patch.");
+                Harmony.CreateAndPatchAll(typeof(AutoAdvanceDialogPatch));
+            }
+            if (bAutoBattleTweaks.Value)
+            {
+                Log.LogInfo($"Patches: Applying auto-battle patch.");
+                Harmony.CreateAndPatchAll(typeof(AutoBattlePatch));
             }
             if (bDisableCursor.Value)
             {
@@ -290,7 +311,7 @@ namespace HundredHeroesFix
         }
 
         [HarmonyPatch]
-        public class AutoAdvanceTweakPatch
+        public class AutoAdvanceDialogPatch
         {
             // Remove 2 second delay from auto-advancing dialogue
             [HarmonyPatch(typeof(TextData.UI.KaeruText), nameof(TextData.UI.KaeruText.AutomaticSubmit))]
@@ -327,9 +348,37 @@ namespace HundredHeroesFix
         }
 
         [HarmonyPatch]
+        public class AutoBattlePatch
+        {
+            // Enable auto-battle turbo
+            [HarmonyPatch(typeof(Battle.Command.CommandSelectOperation), nameof(Battle.Command.CommandSelectOperation.UpdateMainCommand))]
+            [HarmonyPostfix]
+            public static void AutoBattleTurboEnable(Battle.Command.CommandSelectOperation __instance, ref MainCommandType __0)
+            {
+                // Set timescale if auto-battling and battle speed is higher than default timescale
+                if ((__0 == MainCommandType.AutoCommand) && (fAutoBattleSpeed.Value != 1.0f))
+                {
+                    Time.timeScale = fAutoBattleSpeed.Value;
+                    Log.LogInfo($"AutoBattle: Enabled turbo mode.");
+                }
+            }
+
+            // Cancel auto-battle turbo
+            [HarmonyPatch(typeof(Battle.Command.CommandSelectOperation), nameof(Battle.Command.CommandSelectOperation.ContinuateAutoCommand), MethodType.Setter)]
+            [HarmonyPostfix]
+            public static void AutoBattleTurboDisable(Battle.Command.CommandSelectOperation __instance, ref bool __0)
+            {
+                if (__0 == false)
+                {
+                    Time.timeScale = 1;
+                    Log.LogInfo($"AutoBattle: Disabled turbo mode.");
+                }
+            }
+        }
+
+        [HarmonyPatch]
         public class MiscPatch
         {
-            
             // Enable skippable intro
             [HarmonyPatch(typeof(UI.Title.Context), nameof(UI.Title.Context.Initialize))]
             [HarmonyPrefix]
@@ -396,21 +445,21 @@ namespace HundredHeroesFix
             }
 
             // Change main camera background colour and set correct FOV for <16:9
-            [HarmonyPatch(typeof(FieldCamera), nameof(FieldCamera.Awake))]
+            [HarmonyPatch(typeof(UniversalAdditionalCameraData), nameof(UniversalAdditionalCameraData.OnAfterDeserialize))]
             [HarmonyPostfix]
-            public static void AntiAliasing(FieldCamera __instance)
+            public static void AntiAliasing(UniversalAdditionalCameraData __instance)
             {
-                if (__instance.MainCamera != null)
+                if (__instance.gameObject.name == "Main Camera")
                 {
                     // Set background colour to black instead of blue. Makes the void outside of building stand out less, also good for OLEDs?
-                    __instance.MainCamera.backgroundColor = Color.black;
+                    __instance.gameObject.GetComponent<Camera>().backgroundColor = Color.black;
                     Log.LogInfo("AspectRatio: Changed background colour of Main Camera.");
 
                     if (fAspectRatio < fNativeAspect)
                     {
-                        __instance.MainCamera.usePhysicalProperties = true;
-                        __instance.MainCamera.gateFit = Camera.GateFitMode.Horizontal;
-                        __instance.MainCamera.sensorSize = new Vector2(16f, 9f);
+                        __instance.gameObject.GetComponent<Camera>().usePhysicalProperties = true;
+                        __instance.gameObject.GetComponent<Camera>().gateFit = Camera.GateFitMode.Horizontal;
+                        __instance.gameObject.GetComponent<Camera>().sensorSize = new Vector2(16f, 9f);
                         Log.LogInfo("AspectRatio: Set Main Camera gate fit mode to horizontal.");
                     }
                 }
@@ -735,19 +784,16 @@ namespace HundredHeroesFix
             }
 
             // Enable SMAA on main camera
-            [HarmonyPatch(typeof(FieldCamera), nameof(FieldCamera.Awake))]
+            [HarmonyPatch(typeof(UniversalAdditionalCameraData), nameof(UniversalAdditionalCameraData.OnAfterDeserialize))]
             [HarmonyPostfix]
-            public static void AntiAliasing(FieldCamera __instance)
+            public static void AntiAliasing(UniversalAdditionalCameraData __instance)
             {
                 if (bEnableSMAA.Value)
                 {
-                    if (__instance.MainCamera != null)
+                    if (__instance.gameObject.name == "Main Camera")
                     {
-                        __instance.MainCamera.backgroundColor = Color.black;
-                        var UACD = __instance.MainCamera.GetComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>();
-
-                        UACD.antialiasing = AntialiasingMode.SubpixelMorphologicalAntiAliasing;
-                        UACD.antialiasingQuality = AntialiasingQuality.High;
+                        __instance.antialiasing = AntialiasingMode.SubpixelMorphologicalAntiAliasing;
+                        __instance.antialiasingQuality = AntialiasingQuality.High;
 
                         Log.LogInfo("Graphical Tweaks: Enabled high quality SMAA on Main Camera.");
                     }
