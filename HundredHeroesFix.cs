@@ -359,13 +359,20 @@ namespace HundredHeroesFix
             // Enable manual battle turbo
             [HarmonyPatch(typeof(Battle.Engine), nameof(Battle.Engine.EndCommandSelect))]
             [HarmonyPostfix]
-            public static void ManualBattleTurboEnable(Battle.Engine __instance)
+            public static void BattleTurboEnable(Battle.Engine __instance)
             {
                 if ((__instance.CommandSelectOperation.SelectedMainCommand == Battle.Command.MainCommandType.Battle) && (fBattleSpeed.Value != 1.0f))
                 {
                     bHasChangedTimescale = true;
-                    Time.timeScale = fAutoBattleSpeed.Value;
+                    Time.timeScale = fBattleSpeed.Value;
                     Log.LogInfo($"Battle: Manual: Changed game speed.");
+                }
+
+                if ((__instance.CommandSelectOperation.SelectedMainCommand == Battle.Command.MainCommandType.AutoCommand) && (fAutoBattleSpeed.Value != 1.0f))
+                {
+                    bHasChangedTimescale = true;
+                    Time.timeScale = fAutoBattleSpeed.Value;
+                    Log.LogInfo($"Battle: Auto: Changed game speed.");
                 }
             }
 
@@ -383,28 +390,7 @@ namespace HundredHeroesFix
                 }
             }
 
-            // Enable auto-battle turbo
-            [HarmonyPatch(typeof(Battle.UI.UIConfirmWindow), nameof(Battle.UI.UIConfirmWindow.OnSubmit))]
-            [HarmonyPostfix]
-            public static void AutoBattleTurboEnable(Battle.UI.UIConfirmWindow __instance, ref Battle.Command.ICommandSelectOperation __0)
-            {
-                if (bHasChangedTimescale)
-                {
-                    bHasChangedTimescale = false;
-                    Time.timeScale = 1.0f;
-                    Log.LogInfo($"Battle: Auto: Reset game speed.");
-                }
-
-                // Set timescale if auto-battling and battle speed is higher than default timescale
-                if ((__0.SelectedMainCommand == Battle.Command.MainCommandType.AutoCommand) && (fAutoBattleSpeed.Value != 1.0f))
-                {
-                    bHasChangedTimescale = true;
-                    Time.timeScale = fAutoBattleSpeed.Value;
-                    Log.LogInfo($"Battle: Auto: Changed game speed.");
-                }
-            }
-
-            // Cancel auto-battle turbo
+            // Disable auto-battle turbo
             [HarmonyPatch(typeof(Battle.Command.CommandSelectOperation), nameof(Battle.Command.CommandSelectOperation.ContinuateAutoCommand), MethodType.Setter)]
             [HarmonyPostfix]
             public static void AutoBattleTurboDisable(Battle.Command.CommandSelectOperation __instance, ref bool __0)
