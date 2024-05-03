@@ -162,7 +162,7 @@ namespace HundredHeroesFix
                                 "RenderScale",
                                 (float)1f,
                                 new ConfigDescription("Set Render Scale. Higher than 1 downsamples and lower than 1 upsamples.",
-                                new AcceptableValueRange<float>(0.1f, 2f)));
+                                new AcceptableValueRange<float>(0.1f, 10f)));
 
             iAnisotropicFiltering = Config.Bind("Graphical Tweaks",
                                 "AnisotropicFiltering",
@@ -753,9 +753,17 @@ namespace HundredHeroesFix
                 var URPAsset = UnityEngine.Rendering.Universal.UniversalRenderPipeline.asset;
                 if (URPAsset != null)
                 {
-                    // Render scale
-                    URPAsset.renderScale = fRenderScale.Value; // 1f default
-                    Log.LogInfo($"Graphical Tweaks: Set render scale to {URPAsset.renderScale}");
+                    // Need to clamp render scale to avoid going over 16384px on either resolution axis.
+                    int iHighestAxis = Math.Max(Screen.currentResolution.width, Screen.currentResolution.height);
+                    float fMaxRenderScale = (float)16384 / iHighestAxis;
+                    float fClampedRenderScale = Math.Clamp(fRenderScale.Value, 0.1f, fMaxRenderScale);
+                    if (fClampedRenderScale < fRenderScale.Value)
+                    {
+                        Log.LogInfo($"Graphical Tweaks: Render scale value is invalid and has been clamped to {fClampedRenderScale}.");
+                    }
+
+                    URPAsset.m_RenderScale = fClampedRenderScale; // 1f default. Normally clamped to 2f but setting member variable instead of renderScale will get us past that limit.
+                    Log.LogInfo($"Graphical Tweaks: Set render scale to {URPAsset.m_RenderScale}");
 
                     // Anisotropic filtering
                     QualitySettings.anisotropicFiltering = AnisotropicFiltering.ForceEnable;
