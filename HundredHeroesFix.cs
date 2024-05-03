@@ -131,10 +131,16 @@ namespace HundredHeroesFix
                                 "Enables battle tweaks.");
 
             fAutoBattleSpeed = Config.Bind("Battle Tweaks",
-                               "AutoBattleSpeed",
-                               (float)4f,
-                               new ConfigDescription("Set auto-battle speed.",
-                               new AcceptableValueRange<float>(1f, 8f))); // 1x to 8x speed seems reasonable.
+                                "AutoBattleSpeed",
+                                (float)1f,
+                                new ConfigDescription("Set auto-battle speed.",
+                                new AcceptableValueRange<float>(1f, 8f))); // 1x to 8x speed seems reasonable.
+
+            fBattleSpeed = Config.Bind("Battle Tweaks",
+                                "BattleSpeed",
+                                (float)1f,
+                                new ConfigDescription("Set manual battle speed.",
+                                new AcceptableValueRange<float>(1f, 8f))); // 1x to 8x speed seems reasonable.
 
             // Auto-Advance Tweaks
             bAutoAdvanceTweaks = Config.Bind("Auto Dialog Advance Tweaks",
@@ -350,6 +356,32 @@ namespace HundredHeroesFix
         [HarmonyPatch]
         public class BattlePatch
         {
+            // Enable manual battle turbo
+            [HarmonyPatch(typeof(Battle.Engine), nameof(Battle.Engine.EndCommandSelect))]
+            [HarmonyPostfix]
+            public static void ManualBattleTurboEnable(Battle.Engine __instance)
+            {
+                if ((__instance.CommandSelectOperation.SelectedMainCommand == Battle.Command.MainCommandType.Battle) && (fBattleSpeed.Value != 1.0f))
+                {
+                    bHasChangedTimescale = true;
+                    Time.timeScale = fAutoBattleSpeed.Value;
+                    Log.LogInfo($"Battle: Manual: Changed game speed.");
+                }
+            }
+
+            // Disable manual battle turbo
+            [HarmonyPatch(typeof(Battle.Engine), nameof(Battle.Engine.BeginCommandSelect))]
+            [HarmonyPostfix]
+            public static void ManualBattleTurboDisable(Battle.Engine __instance)
+            {
+                if (bHasChangedTimescale)
+                {
+                    bHasChangedTimescale = false;
+                    Time.timeScale = 1.0f;
+                    Log.LogInfo($"Battle: Manual: Reset game speed.");
+                }
+            }
+
             // Enable auto-battle turbo
             [HarmonyPatch(typeof(Battle.UI.UIConfirmWindow), nameof(Battle.UI.UIConfirmWindow.OnSubmit))]
             [HarmonyPostfix]
@@ -359,7 +391,7 @@ namespace HundredHeroesFix
                 {
                     bHasChangedTimescale = false;
                     Time.timeScale = 1.0f;
-                    Log.LogInfo($"Battle: Changed game speed.");
+                    Log.LogInfo($"Battle: Auto: Reset game speed.");
                 }
 
                 // Set timescale if auto-battling and battle speed is higher than default timescale
@@ -367,7 +399,7 @@ namespace HundredHeroesFix
                 {
                     bHasChangedTimescale = true;
                     Time.timeScale = fAutoBattleSpeed.Value;
-                    Log.LogInfo($"Battle: Reset game speed.");
+                    Log.LogInfo($"Battle: Auto: Changed game speed.");
                 }
             }
 
@@ -380,7 +412,7 @@ namespace HundredHeroesFix
                 {
                     bHasChangedTimescale = false;
                     Time.timeScale = 1;
-                    Log.LogInfo($"Battle: Cancelled auto battle and reset game speed.");
+                    Log.LogInfo($"Battle: Auto: Cancelled auto battle and reset game speed.");
                 }
             }
         }
@@ -434,7 +466,7 @@ namespace HundredHeroesFix
                     __0 = iCustomResX.Value;
                     __1 = iCustomResY.Value;
                     __2 = bFullscreen.Value;
-                    Log.LogInfo($"Resolution: Applied custom resolution of {iCustomResX.Value}x{iCustomResY.Value} : Fullscreen = {bFullscreen.Value}");
+                    Log.LogInfo($"Resolution: Applied custom resolution of {iCustomResX.Value}x{iCustomResY.Value} : Fullscreen = {bFullscreen.Value}.");
                     return true;
                 }
                 return true;
@@ -597,7 +629,7 @@ namespace HundredHeroesFix
                     if (vignette)
                     {
                         vignette.intensity.value /= fAspectMultiplier;
-                        Log.LogInfo($"AspectRatio: Changed intestity of {__instance.gameObject.name}'s vignette to {vignette.intensity.value}");
+                        Log.LogInfo($"AspectRatio: Changed intestity of {__instance.gameObject.name}'s vignette to {vignette.intensity.value}.");
                     }
                 }
             }
@@ -644,7 +676,7 @@ namespace HundredHeroesFix
                             transform.sizeDelta = new Vector2(1920f, 1920f / fAspectRatio);
                         }
 
-                        Log.LogInfo($"AspectRatio: Adjusted the size of {__instance.gameObject.transform.parent.gameObject.name}->{__instance.gameObject.name}");
+                        Log.LogInfo($"AspectRatio: Adjusted the size of {__instance.gameObject.transform.parent.gameObject.name}->{__instance.gameObject.name}.");
                     }
                 }
 
@@ -663,7 +695,7 @@ namespace HundredHeroesFix
                         transform.localScale = new Vector3(1f, 1f / fAspectMultiplier, 1f);
                     }
 
-                    Log.LogInfo($"AspectRatio: Adjusted the size of {__instance.gameObject.transform.parent.gameObject.name}->{__instance.gameObject.name}");
+                    Log.LogInfo($"AspectRatio: Adjusted the size of {__instance.gameObject.transform.parent.gameObject.name}->{__instance.gameObject.name}.");
                 }
             }
 
@@ -685,7 +717,7 @@ namespace HundredHeroesFix
                         transform.sizeDelta = new Vector2(1920f, 1920f / fAspectRatio);
                     }
 
-                    Log.LogInfo($"AspectRatio: Adjusted the size of background blur to {transform.sizeDelta}");
+                    Log.LogInfo($"AspectRatio: Adjusted the size of background blur to {transform.sizeDelta}.");
                 }
             }
 
@@ -703,7 +735,7 @@ namespace HundredHeroesFix
                         transform.sizeDelta = new Vector2(10000f, 10000f); // This one is already 3000x3000 so it's basically a giant square.
                     }
 
-                    Log.LogInfo($"AspectRatio: Adjusted the size of tutorial background to {transform.sizeDelta}");
+                    Log.LogInfo($"AspectRatio: Adjusted the size of tutorial background to {transform.sizeDelta}.");
                 }
             }
 
@@ -790,13 +822,13 @@ namespace HundredHeroesFix
                     };
 
                     URPAsset.shadowDistance = fShadowDistance.Value; // 150f high
-                    Log.LogInfo($"Graphical Tweaks: Set shadow distance to {URPAsset.shadowDistance}");
+                    Log.LogInfo($"Graphical Tweaks: Set shadow distance to {URPAsset.shadowDistance}.");
                     URPAsset.mainLightShadowmapResolution = shadowRes; // 1024 high
-                    Log.LogInfo($"Graphical Tweaks: Set main light shadowmap resolution to {URPAsset.mainLightShadowmapResolution}");
+                    Log.LogInfo($"Graphical Tweaks: Set main light shadowmap resolution to {URPAsset.mainLightShadowmapResolution}.");
                     URPAsset.additionalLightsShadowmapResolution = shadowRes; // 1024 high
-                    Log.LogInfo($"Graphical Tweaks: Set additional lights shadowmap resolution to {URPAsset.additionalLightsShadowmapResolution}");
+                    Log.LogInfo($"Graphical Tweaks: Set additional lights shadowmap resolution to {URPAsset.additionalLightsShadowmapResolution}.");
                     URPAsset.shadowCascadeCount = iShadowCascades.Value; // 3 high
-                    Log.LogInfo($"Graphical Tweaks: Set shadow cascades to {URPAsset.shadowCascadeCount}");
+                    Log.LogInfo($"Graphical Tweaks: Set shadow cascades to {URPAsset.shadowCascadeCount}.");
                 }
             }
 
