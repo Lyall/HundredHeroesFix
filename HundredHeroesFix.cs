@@ -5,8 +5,6 @@ using BepInEx.Logging;
 using HarmonyLib;
 using UnityEngine;
 using System;
-using EventWork;
-using Framework;
 
 namespace HundredHeroesFix
 {
@@ -136,13 +134,13 @@ namespace HundredHeroesFix
                                 "AutoBattleSpeed",
                                 (float)1f,
                                 new ConfigDescription("Set auto-battle speed.",
-                                new AcceptableValueRange<float>(1f, 8f))); // 1x to 8x speed seems reasonable.
+                                new AcceptableValueRange<float>(1f, 8f)));
 
             fBattleSpeed = Config.Bind("Battle Tweaks",
                                 "BattleSpeed",
                                 (float)1f,
                                 new ConfigDescription("Set manual battle speed.",
-                                new AcceptableValueRange<float>(1f, 8f))); // 1x to 8x speed seems reasonable.
+                                new AcceptableValueRange<float>(1f, 8f)));
 
             // Auto-Advance Tweaks
             bAutoAdvanceTweaks = Config.Bind("Auto Dialog Advance Tweaks",
@@ -346,7 +344,7 @@ namespace HundredHeroesFix
             [HarmonyPostfix]
             public static void RemoveDialogDelay(ref bool __result)
             {
-                // Force auto-advance on for voiced dialog
+                // Force auto-advance for voiced dialog
                 var evtVoiceMngr = GameManager.Instance.EventManager.EventVoiceManager;
                 if (bAutoVoiceDialog.Value && evtVoiceMngr.IsPlayingAll())
                 {
@@ -367,14 +365,14 @@ namespace HundredHeroesFix
                 {
                     bHasChangedTimescale = true;
                     Time.timeScale = fBattleSpeed.Value;
-                    Log.LogInfo($"Battle: Manual: Changed game speed.");
+                    Log.LogInfo($"Battle: Manual: Changed game speed to {fBattleSpeed.Value}.");
                 }
 
                 if ((__instance.CommandSelectOperation.SelectedMainCommand == Battle.Command.MainCommandType.AutoCommand) && (fAutoBattleSpeed.Value != 1.0f))
                 {
                     bHasChangedTimescale = true;
                     Time.timeScale = fAutoBattleSpeed.Value;
-                    Log.LogInfo($"Battle: Auto: Changed game speed.");
+                    Log.LogInfo($"Battle: Auto: Changed game speed to {fAutoBattleSpeed.Value}.");
                 }
             }
 
