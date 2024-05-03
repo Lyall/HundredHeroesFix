@@ -31,9 +31,10 @@ namespace HundredHeroesFix
         public static ConfigEntry<bool> bAutoVoiceDialog;
         public static ConfigEntry<float> fAutoAdvanceDelay;
 
-        // Auto-Battle Tweaks
-        public static ConfigEntry<bool> bAutoBattleTweaks;
+        // Battle Tweaks
+        public static ConfigEntry<bool> bBattleTweaks;
         public static ConfigEntry<float> fAutoBattleSpeed;
+        public static ConfigEntry<float> fBattleSpeed;
 
         // Graphical Tweaks
         public static ConfigEntry<bool> bGraphicalTweaks;
@@ -44,8 +45,8 @@ namespace HundredHeroesFix
         public static ConfigEntry<int> iShadowResolution;
         public static ConfigEntry<int> iShadowCascades;
         public static ConfigEntry<bool> bEnableSMAA;
-        public static ConfigEntry<bool> bChromaticAberration;
-        public static ConfigEntry<bool> bVignette;
+        public static ConfigEntry<bool> bDisableChromaticAberration;
+        public static ConfigEntry<bool> bDisableVignette;
 
         // Aspect Ratio
         public static float fAspectRatio;
@@ -123,13 +124,13 @@ namespace HundredHeroesFix
                                 new ConfigDescription("Set controller icon style. 1 = Dualshock (DS4), 2 = DualSense (DS5), 3 = Xbox",
                                 new AcceptableValueRange<int>(1, 3)));
 
-            // Auto-Battle Tweaks
-            bAutoBattleTweaks = Config.Bind("Auto Battle Tweaks",
+            // Battle Tweaks
+            bBattleTweaks = Config.Bind("Battle Tweaks",
                                 "Enabled",
                                 false,
-                                "Enables auto battle tweaks.");
+                                "Enables battle tweaks.");
 
-            fAutoBattleSpeed = Config.Bind("Auto Battle Tweaks",
+            fAutoBattleSpeed = Config.Bind("Battle Tweaks",
                                "AutoBattleSpeed",
                                (float)4f,
                                new ConfigDescription("Set auto-battle speed.",
@@ -193,12 +194,12 @@ namespace HundredHeroesFix
                                 true,
                                 "Enables high quality post-process SMAA.");
 
-            bChromaticAberration = Config.Bind("Graphical Tweaks",
+            bDisableChromaticAberration = Config.Bind("Graphical Tweaks",
                                 "DisableChromaticAberration",
                                 false,
                                 "Set to true to disable chromatic abberation (colour fringing at edges of screen).");
 
-            bVignette = Config.Bind("Graphical Tweaks",
+            bDisableVignette = Config.Bind("Graphical Tweaks",
                                 "DisableVignette",
                                 false,
                                 "Set to true to disable vignette (darkening at edges of screen).");
@@ -260,10 +261,10 @@ namespace HundredHeroesFix
                 Log.LogInfo($"Patches: Applying dialog auto-advance patch.");
                 Harmony.CreateAndPatchAll(typeof(AutoAdvanceDialogPatch));
             }
-            if (bAutoBattleTweaks.Value)
+            if (bBattleTweaks.Value)
             {
                 Log.LogInfo($"Patches: Applying auto-battle patch.");
-                Harmony.CreateAndPatchAll(typeof(AutoBattlePatch));
+                Harmony.CreateAndPatchAll(typeof(BattlePatch));
             }
             if (bDisableCursor.Value)
             {
@@ -342,7 +343,7 @@ namespace HundredHeroesFix
         }
 
         [HarmonyPatch]
-        public class AutoBattlePatch
+        public class BattlePatch
         {
             // Enable auto-battle turbo
             [HarmonyPatch(typeof(Battle.UI.UIConfirmWindow), nameof(Battle.UI.UIConfirmWindow.OnSubmit))]
@@ -353,7 +354,7 @@ namespace HundredHeroesFix
                 {
                     bHasChangedTimescale = false;
                     Time.timeScale = 1.0f;
-                    Log.LogInfo($"AutoBattle: Disabled turbo mode.");
+                    Log.LogInfo($"Battle: Changed game speed.");
                 }
 
                 // Set timescale if auto-battling and battle speed is higher than default timescale
@@ -361,7 +362,7 @@ namespace HundredHeroesFix
                 {
                     bHasChangedTimescale = true;
                     Time.timeScale = fAutoBattleSpeed.Value;
-                    Log.LogInfo($"AutoBattle: Enabled turbo mode.");
+                    Log.LogInfo($"Battle: Reset game speed.");
                 }
             }
 
@@ -374,7 +375,7 @@ namespace HundredHeroesFix
                 {
                     bHasChangedTimescale = false;
                     Time.timeScale = 1;
-                    Log.LogInfo($"AutoBattle: Cancelled auto battle and disabled turbo mode.");
+                    Log.LogInfo($"Battle: Cancelled auto battle and reset game speed.");
                 }
             }
         }
@@ -753,7 +754,8 @@ namespace HundredHeroesFix
                 var URPAsset = UnityEngine.Rendering.Universal.UniversalRenderPipeline.asset;
                 if (URPAsset != null)
                 {
-                    // Need to clamp render scale to avoid going over 16384px on either resolution axis.
+                    // Render scale
+                    // Need to clamp value to avoid going over 16384px on either resolution axis.
                     int iHighestAxis = Math.Max(Screen.currentResolution.width, Screen.currentResolution.height);
                     float fMaxRenderScale = (float)16384 / iHighestAxis;
                     float fClampedRenderScale = Math.Clamp(fRenderScale.Value, 0.1f, fMaxRenderScale);
@@ -815,7 +817,7 @@ namespace HundredHeroesFix
             [HarmonyPostfix]
             public static void PostProcessTweaks(UnityEngine.Rendering.Volume __instance)
             {
-                if (bVignette.Value)
+                if (bDisableVignette.Value)
                 {
                     __instance.profile.TryGet(out UnityEngine.Rendering.Universal.Vignette vignette);
                     if (vignette)
@@ -825,7 +827,7 @@ namespace HundredHeroesFix
                     }
                 }
 
-                if (bChromaticAberration.Value)
+                if (bDisableChromaticAberration.Value)
                 {
                     __instance.profile.TryGet(out UnityEngine.Rendering.Universal.ChromaticAberration ca);
                     if (ca)
