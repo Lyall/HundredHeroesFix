@@ -374,7 +374,8 @@ namespace HundredHeroesFix
             [HarmonyPostfix]
             public static void ManualBattleTurboDisable(Battle.Engine __instance)
             {
-                if (bHasChangedTimescale)
+                // Don't reset game speed if it's an auto battle
+                if (bHasChangedTimescale && !__instance.CommandSelectOperation.ContinuateAutoCommand)
                 {
                     bHasChangedTimescale = false;
                     Time.timeScale = 1.0f;
