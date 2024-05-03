@@ -4,14 +4,7 @@ using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
 using UnityEngine;
-using UnityEngine.Rendering.Universal;
-using FieldStage.UI;
-using UnityEngine.UI;
-using Common.UI;
-using Kaeru.UI;
-using GameData;
 using System;
-using Battle.Command;
 
 namespace HundredHeroesFix
 {
@@ -67,6 +60,7 @@ namespace HundredHeroesFix
 
         // Variables
         public static bool bHasSkippedOpeningMovie;
+        public static bool bHasChangedTimescale;
 
         public override void Load()
         {
@@ -351,13 +345,21 @@ namespace HundredHeroesFix
         public class AutoBattlePatch
         {
             // Enable auto-battle turbo
-            [HarmonyPatch(typeof(Battle.Command.CommandSelectOperation), nameof(Battle.Command.CommandSelectOperation.UpdateMainCommand))]
+            [HarmonyPatch(typeof(Battle.UI.UIConfirmWindow), nameof(Battle.UI.UIConfirmWindow.OnSubmit))]
             [HarmonyPostfix]
-            public static void AutoBattleTurboEnable(Battle.Command.CommandSelectOperation __instance, ref MainCommandType __0)
+            public static void AutoBattleTurboEnable(Battle.UI.UIConfirmWindow __instance, ref Battle.Command.ICommandSelectOperation __0)
             {
-                // Set timescale if auto-battling and battle speed is higher than default timescale
-                if ((__0 == MainCommandType.AutoCommand) && (fAutoBattleSpeed.Value != 1.0f))
+                if (bHasChangedTimescale)
                 {
+                    bHasChangedTimescale = false;
+                    Time.timeScale = 1.0f;
+                    Log.LogInfo($"AutoBattle: Disabled turbo mode.");
+                }
+
+                // Set timescale if auto-battling and battle speed is higher than default timescale
+                if ((__0.SelectedMainCommand == Battle.Command.MainCommandType.AutoCommand) && (fAutoBattleSpeed.Value != 1.0f))
+                {
+                    bHasChangedTimescale = true;
                     Time.timeScale = fAutoBattleSpeed.Value;
                     Log.LogInfo($"AutoBattle: Enabled turbo mode.");
                 }
@@ -368,10 +370,11 @@ namespace HundredHeroesFix
             [HarmonyPostfix]
             public static void AutoBattleTurboDisable(Battle.Command.CommandSelectOperation __instance, ref bool __0)
             {
-                if (__0 == false)
+                if (__0 == false && bHasChangedTimescale)
                 {
+                    bHasChangedTimescale = false;
                     Time.timeScale = 1;
-                    Log.LogInfo($"AutoBattle: Disabled turbo mode.");
+                    Log.LogInfo($"AutoBattle: Cancelled auto battle and disabled turbo mode.");
                 }
             }
         }
@@ -392,7 +395,7 @@ namespace HundredHeroesFix
             }
 
             // Set vsync/target framerate
-            [HarmonyPatch(typeof(DisplaySetting), nameof(DisplaySetting.UpdateFrameRate))]
+            [HarmonyPatch(typeof(GameData.DisplaySetting), nameof(GameData.DisplaySetting.UpdateFrameRate))]
             [HarmonyPostfix]
             public static void SetVSync()
             {
@@ -445,9 +448,9 @@ namespace HundredHeroesFix
             }
 
             // Change main camera background colour and set correct FOV for <16:9
-            [HarmonyPatch(typeof(UniversalAdditionalCameraData), nameof(UniversalAdditionalCameraData.OnAfterDeserialize))]
+            [HarmonyPatch(typeof(UnityEngine.Rendering.Universal.UniversalAdditionalCameraData), nameof(UnityEngine.Rendering.Universal.UniversalAdditionalCameraData.OnAfterDeserialize))]
             [HarmonyPostfix]
-            public static void AntiAliasing(UniversalAdditionalCameraData __instance)
+            public static void AntiAliasing(UnityEngine.Rendering.Universal.UniversalAdditionalCameraData __instance)
             {
                 if (__instance.gameObject.name == "Main Camera")
                 {
@@ -466,9 +469,9 @@ namespace HundredHeroesFix
             }
 
             // Offset and span the add unit screen
-            [HarmonyPatch(typeof(AddUnit), nameof(AddUnit.Show))]
+            [HarmonyPatch(typeof(FieldStage.UI.AddUnit), nameof(FieldStage.UI.AddUnit.Show))]
             [HarmonyPostfix]
-            public static void AddUnitPos(AddUnit __instance)
+            public static void AddUnitPos(FieldStage.UI.AddUnit __instance)
             {
                 if (fAspectRatio > fNativeAspect)
                 {
@@ -505,9 +508,9 @@ namespace HundredHeroesFix
             }
 
             // Offset blacksmith build up screen
-            [HarmonyPatch(typeof(BlackSmithWindow), nameof(BlackSmithWindow.Awake))]
+            [HarmonyPatch(typeof(FieldStage.UI.BlackSmithWindow), nameof(FieldStage.UI.BlackSmithWindow.Awake))]
             [HarmonyPostfix]
-            public static void BlacksmithPos(BlackSmithWindow __instance)
+            public static void BlacksmithPos(FieldStage.UI.BlackSmithWindow __instance)
             {
                 if (fAspectRatio > fNativeAspect)
                 {
@@ -531,9 +534,9 @@ namespace HundredHeroesFix
             }
 
             // Offset inn screen
-            [HarmonyPatch(typeof(InnCanvas), nameof(InnCanvas.Open))]
+            [HarmonyPatch(typeof(FieldStage.UI.InnCanvas), nameof(FieldStage.UI.InnCanvas.Open))]
             [HarmonyPostfix]
-            public static void InnCanvasPos(InnCanvas __instance)
+            public static void InnCanvasPos(FieldStage.UI.InnCanvas __instance)
             {
                 if (__instance._header != null && __instance._dialogRoot != null)
                 {
@@ -559,18 +562,18 @@ namespace HundredHeroesFix
             }
 
             // Fix broken screens that are zoomed in
-            [HarmonyPatch(typeof(CanvasScaler), nameof(CanvasScaler.OnEnable))]
+            [HarmonyPatch(typeof(UnityEngine.UI.CanvasScaler), nameof(UnityEngine.UI.CanvasScaler.OnEnable))]
             [HarmonyPostfix]
-            public static void LoadScreenFix(CanvasScaler __instance)
+            public static void LoadScreenFix(UnityEngine.UI.CanvasScaler __instance)
             {
                 if (fAspectRatio > fNativeAspect)
                 {
                     if (__instance != null)
                     {
-                        if (__instance.referenceResolution == new Vector2(1920f, 600f) || (__instance.referenceResolution == new Vector2(1920f, 1080f) && __instance.screenMatchMode == CanvasScaler.ScreenMatchMode.MatchWidthOrHeight))
+                        if (__instance.referenceResolution == new Vector2(1920f, 600f) || (__instance.referenceResolution == new Vector2(1920f, 1080f) && __instance.screenMatchMode == UnityEngine.UI.CanvasScaler.ScreenMatchMode.MatchWidthOrHeight))
                         {
                             __instance.referenceResolution = new Vector2(1920f, 1080f);
-                            __instance.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
+                            __instance.screenMatchMode = UnityEngine.UI.CanvasScaler.ScreenMatchMode.Expand;
                             Log.LogInfo($"AspectRatio: Fixed broken screen {__instance.transform.parent.gameObject.name}.");
                         }
                     }
@@ -584,7 +587,7 @@ namespace HundredHeroesFix
             {
                 if (fAspectRatio > fNativeAspect)
                 {
-                    __instance.profile.TryGet(out Vignette vignette);
+                    __instance.profile.TryGet(out UnityEngine.Rendering.Universal.Vignette vignette);
                     if (vignette)
                     {
                         vignette.intensity.value /= fAspectMultiplier;
@@ -608,7 +611,6 @@ namespace HundredHeroesFix
                     }
                     else if (fAspectRatio < fNativeAspect)
                     {
-                        //fadeTransform.localScale = new Vector3(1f, 1f / fAspectMultiplier, 1f);
                         // Not necessary
                     }
 
@@ -617,9 +619,9 @@ namespace HundredHeroesFix
             }
 
             // Span several backgrounds
-            [HarmonyPatch(typeof(Image), nameof(Image.OnEnable))]
+            [HarmonyPatch(typeof(UnityEngine.UI.Image), nameof(UnityEngine.UI.Image.OnEnable))]
             [HarmonyPostfix]
-            public static void FilterFix(Image __instance)
+            public static void FilterFix(UnityEngine.UI.Image __instance)
             {
                 if (__instance.gameObject.name == "filter" || __instance.gameObject.name == "Filter" || __instance.gameObject.name == "FIlter" || __instance.gameObject.name == "blackSheet" || __instance.gameObject.name == "bgFilter" || __instance.gameObject.name == "filterBlack")
                 {
@@ -660,9 +662,9 @@ namespace HundredHeroesFix
             }
 
             // Span background blur
-            [HarmonyPatch(typeof(UIBackgroundBlur), nameof(UIBackgroundBlur.OnEnable))]
+            [HarmonyPatch(typeof(Kaeru.UI.UIBackgroundBlur), nameof(Kaeru.UI.UIBackgroundBlur.OnEnable))]
             [HarmonyPostfix]
-            public static void MapBackground(UIBackgroundBlur __instance)
+            public static void MapBackground(Kaeru.UI.UIBackgroundBlur __instance)
             {
                 var transform = __instance.GetComponent<RectTransform>();
 
@@ -676,14 +678,15 @@ namespace HundredHeroesFix
                     {
                         transform.sizeDelta = new Vector2(1920f, 1920f / fAspectRatio);
                     }
+
                     Log.LogInfo($"AspectRatio: Adjusted the size of background blur to {transform.sizeDelta}");
                 }
             }
 
             // Span tutorial background
-            [HarmonyPatch(typeof(Tutorial), nameof(Tutorial.RefleshPage))]
+            [HarmonyPatch(typeof(Common.UI.Tutorial), nameof(Common.UI.Tutorial.RefleshPage))]
             [HarmonyPostfix]
-            public static void TutorialBackground(Tutorial __instance)
+            public static void TutorialBackground(Common.UI.Tutorial __instance)
             {
                 if (__instance.gameObject.transform.GetChild(0) != null)
                 {
@@ -713,7 +716,6 @@ namespace HundredHeroesFix
                     }
                     else if (fAspectRatio < fNativeAspect)
                     {
-                        //transform.localScale = new Vector3(1.78f * fAspectMultiplier, 1.78f, 1.78f);
                         // Not necessary
                     }
 
@@ -744,11 +746,11 @@ namespace HundredHeroesFix
         [HarmonyPatch]
         public class GraphicsTweakPatch
         {
-            [HarmonyPatch(typeof(DisplaySetting), nameof(DisplaySetting.UpdateShadowOption))]
+            [HarmonyPatch(typeof(GameData.DisplaySetting), nameof(GameData.DisplaySetting.UpdateShadowOption))]
             [HarmonyPostfix]
             public static void GraphicalTweaks()
             {
-                var URPAsset = UniversalRenderPipeline.asset;
+                var URPAsset = UnityEngine.Rendering.Universal.UniversalRenderPipeline.asset;
                 if (URPAsset != null)
                 {
                     // Render scale
@@ -784,16 +786,16 @@ namespace HundredHeroesFix
             }
 
             // Enable SMAA on main camera
-            [HarmonyPatch(typeof(UniversalAdditionalCameraData), nameof(UniversalAdditionalCameraData.OnAfterDeserialize))]
+            [HarmonyPatch(typeof(UnityEngine.Rendering.Universal.UniversalAdditionalCameraData), nameof(UnityEngine.Rendering.Universal.UniversalAdditionalCameraData.OnAfterDeserialize))]
             [HarmonyPostfix]
-            public static void AntiAliasing(UniversalAdditionalCameraData __instance)
+            public static void AntiAliasing(UnityEngine.Rendering.Universal.UniversalAdditionalCameraData __instance)
             {
                 if (bEnableSMAA.Value)
                 {
                     if (__instance.gameObject.name == "Main Camera")
                     {
-                        __instance.antialiasing = AntialiasingMode.SubpixelMorphologicalAntiAliasing;
-                        __instance.antialiasingQuality = AntialiasingQuality.High;
+                        __instance.antialiasing = UnityEngine.Rendering.Universal.AntialiasingMode.SubpixelMorphologicalAntiAliasing;
+                        __instance.antialiasingQuality = UnityEngine.Rendering.Universal.AntialiasingQuality.High;
 
                         Log.LogInfo("Graphical Tweaks: Enabled high quality SMAA on Main Camera.");
                     }
@@ -807,7 +809,7 @@ namespace HundredHeroesFix
             {
                 if (bVignette.Value)
                 {
-                    __instance.profile.TryGet(out Vignette vignette);
+                    __instance.profile.TryGet(out UnityEngine.Rendering.Universal.Vignette vignette);
                     if (vignette)
                     {
                         vignette.active = false;
@@ -817,7 +819,7 @@ namespace HundredHeroesFix
 
                 if (bChromaticAberration.Value)
                 {
-                    __instance.profile.TryGet(out ChromaticAberration ca);
+                    __instance.profile.TryGet(out UnityEngine.Rendering.Universal.ChromaticAberration ca);
                     if (ca)
                     {
                         ca.active = false;
