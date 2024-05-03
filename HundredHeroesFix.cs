@@ -5,6 +5,8 @@ using BepInEx.Logging;
 using HarmonyLib;
 using UnityEngine;
 using System;
+using EventWork;
+using Framework;
 
 namespace HundredHeroesFix
 {
@@ -330,9 +332,9 @@ namespace HundredHeroesFix
                     __0 = fAutoAdvanceDelay.Value;
                 }
 
-                var sndMngr = SoundManager.Instance;
                 // Only remove dialog delay for voiced lines
-                if (bAutoVoiceDialog.Value && (sndMngr._sePlayer._player.GetStatus() == CriWare.CriAtomExPlayer.Status.Playing))
+                var evtVoiceMngr = GameManager.Instance.EventManager.EventVoiceManager;
+                if (bAutoVoiceDialog.Value && evtVoiceMngr.IsPlayingAll())
                 {
                     // 100ms delay seems about right?
                     __0 = 0.1f;
@@ -344,10 +346,10 @@ namespace HundredHeroesFix
             [HarmonyPostfix]
             public static void RemoveDialogDelay(ref bool __result)
             {
-                var sndMngr = SoundManager.Instance;
-                if (bAutoVoiceDialog.Value && (sndMngr._sePlayer._player.GetStatus() == CriWare.CriAtomExPlayer.Status.Playing))
+                // Force auto-advance on for voiced dialog
+                var evtVoiceMngr = GameManager.Instance.EventManager.EventVoiceManager;
+                if (bAutoVoiceDialog.Value && evtVoiceMngr.IsPlayingAll())
                 {
-                    // Force auto-advance on for voiced dialog
                     __result = true;
                 }
             }
