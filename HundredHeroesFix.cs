@@ -27,7 +27,7 @@ namespace HundredHeroesFix
         public static ConfigEntry<int> iControllerStyle;
 
         // Auto-Advance Tweaks
-        public static ConfigEntry<bool> bAutoAdvanceTweaks;
+        public static ConfigEntry<bool> bDialogTweaks;
         public static ConfigEntry<bool> bAutoVoiceDialog;
         public static ConfigEntry<float> fAutoAdvanceDelay;
         public static ConfigEntry<float> fTextSpeedMultiplier;
@@ -144,7 +144,7 @@ namespace HundredHeroesFix
                                 new AcceptableValueRange<float>(1f, 8f)));
 
             // Auto-Advance Tweaks
-            bAutoAdvanceTweaks = Config.Bind("Dialog Tweaks",
+            bDialogTweaks = Config.Bind("Dialog Tweaks",
                                 "Enabled",
                                 true,
                                 "Enables auto dialog advance tweaks.");
@@ -275,7 +275,7 @@ namespace HundredHeroesFix
                 Log.LogInfo($"Patches: Applying graphical tweaks patch.");
                 Harmony.CreateAndPatchAll(typeof(GraphicsTweakPatch));
             }
-            if (bAutoAdvanceTweaks.Value)
+            if (bDialogTweaks.Value)
             {
                 Log.LogInfo($"Patches: Applying dialog patch.");
                 Harmony.CreateAndPatchAll(typeof(DialogPatch));
