@@ -4,7 +4,7 @@
     <TargetFramework>net6.0</TargetFramework>
     <AssemblyName>HundredHeroesFix</AssemblyName>
     <Description>A fix for Eiyuden Chronicles: Hundred Heroes to add ultrawide support and more.</Description>
-    <Version>0.9.5</Version>
+    <Version>0.9.6</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
     <RestoreAdditionalProjectSources>
@@ -23,6 +23,9 @@
   <ItemGroup>
     <Reference Include="Assembly-CSharp">
       <HintPath>libs\Assembly-CSharp-nstrip.dll</HintPath>
+    </Reference>
+    <Reference Include="Cinemachine">
+      <HintPath>libs\Cinemachine-nstrip.dll</HintPath>
     </Reference>
     <Reference Include="CriMw.CriWare.Runtime">
       <HintPath>libs\CriMw.CriWare.Runtime-nstrip.dll</HintPath>

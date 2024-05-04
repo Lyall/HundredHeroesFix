@@ -143,7 +143,7 @@ namespace HundredHeroesFix
                                 new ConfigDescription("Set manual battle speed.",
                                 new AcceptableValueRange<float>(1f, 8f)));
 
-            // Auto-Advance Tweaks
+            // Dialog Tweaks
             bDialogTweaks = Config.Bind("Dialog Tweaks",
                                 "Enabled",
                                 true,
@@ -438,6 +438,15 @@ namespace HundredHeroesFix
                     __instance.ChangeLogoSkipEnable(true);
                     Log.LogInfo($"Intro Skip: Enabled skippable logos.");
                 }
+            }
+
+            // Fix depth of field setting not applying in cutscenes
+            [HarmonyPatch(typeof(Cinemachine.CinemachineBrain), nameof(Cinemachine.CinemachineBrain.OnEnable))]
+            [HarmonyPostfix]
+            public static void FixDofBug()
+            {
+                Log.LogInfo($"FIXING DOF BUG");
+                GameManager.Instance.SaveDataManager.SystemData.Display.UpdateDofOption();   
             }
 
             // Set vsync/target framerate
