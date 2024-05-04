@@ -147,7 +147,7 @@ namespace HundredHeroesFix
             bDialogTweaks = Config.Bind("Dialog Tweaks",
                                 "Enabled",
                                 true,
-                                "Enables auto dialog advance tweaks.");
+                                "Enables dialog tweaks.");
 
             bAutoVoiceDialog = Config.Bind("Dialog Tweaks",
                                 "AutoAdvanceVoicedDialog",
