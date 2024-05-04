@@ -8,9 +8,10 @@ This is a BepInEx plugin for Eiyuden Chronicle: Hundred Heroes that adds custom 
 - Custom resolution support.
 - Ultrawide and narrower aspect ratio support.
 - Intro skip.
-- Graphical tweaks like render scale, shadow resolution/distance and vignette/CA toggles.
 - Hide mouse cursor.
-- Remove two-second delay on voiced dialog auto-advancing.
+- Graphical tweaks like the ability to change render scale, shadow resolution/distance and vignette/CA toggles.
+- Dialog tweaks (removing delay on voice lines, text speed etc).
+- Battle tweaks (auto-battle and manual battle speed options).
 - Force specific controller button icons (DS4/DS5/Xbox).
 
 ## Installation
