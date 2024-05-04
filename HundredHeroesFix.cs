@@ -369,7 +369,7 @@ namespace HundredHeroesFix
                 var evtVoiceMngr = GameManager.Instance.EventManager.EventVoiceManager;
                 if ((fTextSpeedMultiplier.Value != 1f) && !evtVoiceMngr.IsPlayingAll())
                 {
-                    __instance._speed /= fTextSpeedMultiplier.Value;
+                    __instance._speed /= fTextSpeedMultiplier.Value; // Lower values means the text goes by faster.
                 }
             }
         }
