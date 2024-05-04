@@ -30,6 +30,7 @@ namespace HundredHeroesFix
         public static ConfigEntry<bool> bAutoAdvanceTweaks;
         public static ConfigEntry<bool> bAutoVoiceDialog;
         public static ConfigEntry<float> fAutoAdvanceDelay;
+        public static ConfigEntry<float> fTextSpeedMultiplier;
 
         // Battle Tweaks
         public static ConfigEntry<bool> bBattleTweaks;
@@ -120,7 +121,7 @@ namespace HundredHeroesFix
 
             iControllerStyle = Config.Bind("Force Controller Icons",
                                 "IconStyle",
-                                (int)1,
+                                1,
                                 new ConfigDescription("Set controller icon style. 1 = Dualshock (DS4), 2 = DualSense (DS5), 3 = Xbox",
                                 new AcceptableValueRange<int>(1, 3)));
 
@@ -132,13 +133,13 @@ namespace HundredHeroesFix
 
             fAutoBattleSpeed = Config.Bind("Battle Tweaks",
                                 "AutoBattleSpeed",
-                                (float)1f,
+                                1f,
                                 new ConfigDescription("Set auto-battle speed.",
                                 new AcceptableValueRange<float>(1f, 8f)));
 
             fBattleSpeed = Config.Bind("Battle Tweaks",
                                 "BattleSpeed",
-                                (float)1f,
+                                1f,
                                 new ConfigDescription("Set manual battle speed.",
                                 new AcceptableValueRange<float>(1f, 8f)));
 
@@ -148,16 +149,23 @@ namespace HundredHeroesFix
                                 true,
                                 "Enables auto dialog advance tweaks.");
 
-            bAutoVoiceDialog = Config.Bind("Auto Dialog Advance Tweaks",
+            bAutoVoiceDialog = Config.Bind("Dialog Tweaks",
                                 "AutoAdvanceVoicedDialog",
                                 true,
                                 "Enables auto-advancing voiced dialog and removes the forced 2-second delay.");
 
-            fAutoAdvanceDelay = Config.Bind("Auto Dialog Advance Tweaks",
+            fAutoAdvanceDelay = Config.Bind("Dialog Tweaks",
                                 "AutoAdvanceDelay",
-                                (float)2f,
+                                2f,
                                 new ConfigDescription("Set auto-advance dialog delay. Controls when non-voiced dialog automatically moves to the next line.",
                                 new AcceptableValueRange<float>(0f, 10f)));
+
+            fTextSpeedMultiplier = Config.Bind("Dialog Tweaks",
+                                "TextSpeed",
+                                1f,
+                                new ConfigDescription("Set dialog text speed. Controls how fast non-voiced dialog is displayed.",
+                                new AcceptableValueRange<float>(0.5f, 5f)));
+
 
             // Graphical Tweaks
             bGraphicalTweaks = Config.Bind("Graphical Tweaks",
@@ -167,31 +175,31 @@ namespace HundredHeroesFix
 
             fRenderScale = Config.Bind("Graphical Tweaks",
                                 "RenderScale",
-                                (float)1f,
+                                1f,
                                 new ConfigDescription("Set Render Scale. Higher than 1 downsamples and lower than 1 upsamples.",
                                 new AcceptableValueRange<float>(0.1f, 10f)));
 
             iAnisotropicFiltering = Config.Bind("Graphical Tweaks",
                                 "AnisotropicFiltering",
-                                (int)16,
+                                16,
                                 new ConfigDescription("Set Anisotropic Filtering level.",
                                 new AcceptableValueRange<int>(1, 16)));
 
             fShadowDistance = Config.Bind("Graphical Tweaks",
                                 "ShadowDistance",
-                                (float)150f,
+                                150f,
                                 new ConfigDescription("Set distance of shadow rendering. Default High = 150",
                                 new AcceptableValueRange<float>(15f, 500f)));
 
             iShadowResolution = Config.Bind("Graphical Tweaks",
                                 "ShadowResolution",
-                                (int)5,
+                                5,
                                 new ConfigDescription("Set shadow resolution. 1 = 256, 2 = 512, 3 = 1024, 4 = 2048, 5 = 4096, 6 = 8192. Default High = 3",
                                 new AcceptableValueRange<int>(1, 6)));
 
             iShadowCascades = Config.Bind("Graphical Tweaks",
                                 "ShadowCascades",
-                                (int)4,
+                                4,
                                 new ConfigDescription("Set number of shadow cascades. Default High = 3",
                                 new AcceptableValueRange<int>(1, 4)));
 
@@ -269,8 +277,8 @@ namespace HundredHeroesFix
             }
             if (bAutoAdvanceTweaks.Value)
             {
-                Log.LogInfo($"Patches: Applying dialog auto-advance patch.");
-                Harmony.CreateAndPatchAll(typeof(AutoAdvanceDialogPatch));
+                Log.LogInfo($"Patches: Applying dialog patch.");
+                Harmony.CreateAndPatchAll(typeof(DialogPatch));
             }
             if (bBattleTweaks.Value)
             {
@@ -317,7 +325,7 @@ namespace HundredHeroesFix
         }
 
         [HarmonyPatch]
-        public class AutoAdvanceDialogPatch
+        public class DialogPatch
         {
             // Remove 2 second delay from auto-advancing dialog
             [HarmonyPatch(typeof(TextData.UI.KaeruText), nameof(TextData.UI.KaeruText.AutomaticSubmit))]
@@ -349,6 +357,19 @@ namespace HundredHeroesFix
                 if (bAutoVoiceDialog.Value && evtVoiceMngr.IsPlayingAll())
                 {
                     __result = true;
+                }
+            }
+
+            // Set text speed
+            [HarmonyPatch(typeof(TextData.UI.KaeruText), nameof(TextData.UI.KaeruText.Play))]
+            [HarmonyPostfix]
+            public static void RemoveDialogDelay(TextData.UI.KaeruText __instance)
+            {
+                // Check if non-voiced dialog
+                var evtVoiceMngr = GameManager.Instance.EventManager.EventVoiceManager;
+                if ((fTextSpeedMultiplier.Value != 1f) && !evtVoiceMngr.IsPlayingAll())
+                {
+                    __instance._speed /= fTextSpeedMultiplier.Value;
                 }
             }
         }
