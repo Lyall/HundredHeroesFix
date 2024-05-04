@@ -445,7 +445,7 @@ namespace HundredHeroesFix
             [HarmonyPostfix]
             public static void FixDofBug()
             {
-                Log.LogInfo($"FIXING DOF BUG");
+                // Run UpdateDofOption() to disable dof in any cinemachine volumes
                 GameManager.Instance.SaveDataManager.SystemData.Display.UpdateDofOption();   
             }
 
