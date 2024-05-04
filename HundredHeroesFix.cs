@@ -164,7 +164,7 @@ namespace HundredHeroesFix
                                 "TextSpeed",
                                 1f,
                                 new ConfigDescription("Set dialog text speed. Controls how fast non-voiced dialog is displayed.",
-                                new AcceptableValueRange<float>(0.5f, 5f)));
+                                new AcceptableValueRange<float>(0.1f, 10f)));
 
 
             // Graphical Tweaks
