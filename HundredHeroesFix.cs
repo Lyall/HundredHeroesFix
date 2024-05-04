@@ -144,7 +144,7 @@ namespace HundredHeroesFix
                                 new AcceptableValueRange<float>(1f, 8f)));
 
             // Auto-Advance Tweaks
-            bAutoAdvanceTweaks = Config.Bind("Auto Dialog Advance Tweaks",
+            bAutoAdvanceTweaks = Config.Bind("Dialog Tweaks",
                                 "Enabled",
                                 true,
                                 "Enables auto dialog advance tweaks.");
