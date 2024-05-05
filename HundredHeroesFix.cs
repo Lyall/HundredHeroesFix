@@ -539,12 +539,12 @@ namespace HundredHeroesFix
                 }
             }
 
-            // Fix screens that are zoomed
+            // Fix offset screens and constrain them to 16:9
             [HarmonyPatch(typeof(UnityEngine.UI.CanvasScaler), nameof(UnityEngine.UI.CanvasScaler.OnEnable))]
             [HarmonyPostfix]
-            public static void LoadScreenFix(UnityEngine.UI.CanvasScaler __instance)
+            public static void OffsetScreenFix(UnityEngine.UI.CanvasScaler __instance)
             {
-
+                // Fix screens that are zoomed
                 if (__instance.referenceResolution == new Vector2(1920f, 600f) || (__instance.referenceResolution == new Vector2(1920f, 1080f) && __instance.screenMatchMode == UnityEngine.UI.CanvasScaler.ScreenMatchMode.MatchWidthOrHeight))
                 {
                     if (fAspectRatio > fNativeAspect)
@@ -554,21 +554,13 @@ namespace HundredHeroesFix
                         Log.LogInfo($"AspectRatio: Fixed broken screen {__instance.transform.parent.gameObject.name}.");
                     }
                 }
-            }
 
-            // Fix offset screens and constrain them to 16:9
-            [HarmonyPatch(typeof(UnityEngine.UI.CanvasScaler), nameof(UnityEngine.UI.CanvasScaler.OnEnable))]
-            [HarmonyPostfix]
-            public static void OffsetScreenFix(UnityEngine.UI.CanvasScaler __instance)
-            {
                 // Names of broken UI canvases
-                string[] BrokenUI = { "UIWarCanvas(Clone)", "inn_canvas(Clone)", "Field_MainUI (field_canvas)", "battle_canvas(Clone)", "FacilityPartyOrganizationCanvas(Clone)" };
+                string[] BrokenUI = ["UIWarCanvas(Clone)", "inn_canvas(Clone)", "Field_MainUI (field_canvas)", "battle_canvas(Clone)", "FacilityPartyOrganizationCanvas(Clone)"];
 
                 // Set certain UI canvases to 16:9
                 if (__instance.GetComponent<Canvas>().isRootCanvas && (__instance.transform.parent.gameObject != null) && !bSpannedUI.Value)
                 {
-                    //if ((__instance.GetComponent<RectTransform>().sizeDelta.x == 1920.00f) || (__instance.GetComponent<RectTransform>().sizeDelta.y == 1080.00f))
-                    //{
                     if (BrokenUI.Contains(__instance.gameObject.name) || BrokenUI.Contains(__instance.gameObject.transform.parent.gameObject.name))
                     { 
                         if (__instance.GetComponent<UnityEngine.UI.LayoutElement>() == null)
@@ -597,6 +589,51 @@ namespace HundredHeroesFix
                         }
 
                         Log.LogInfo($"Set UI to 16:9 for {__instance.gameObject.transform.parent.gameObject.name}->{__instance.gameObject.name}.");
+                    }
+                }                
+            }
+
+            // Span several backgrounds
+            [HarmonyPatch(typeof(UnityEngine.UI.Image), nameof(UnityEngine.UI.Image.OnEnable))]
+            [HarmonyPostfix]
+            public static void FilterFix(UnityEngine.UI.Image __instance)
+            {
+                // Names of 16:9 backgrounds to span
+                string[] Backgrounds = ["filter", "Filter", "FIlter", "blackSheet", "bgFilter", "filterBlack", "blackBG", "devtreeMask", "statusBlind"];
+
+                if (Backgrounds.Contains(__instance.gameObject.name))
+                {
+                    var transform = __instance.gameObject.GetComponent<RectTransform>();
+
+                    if (transform.sizeDelta == new Vector2(1920f, 1080f) || transform.sizeDelta == new Vector2(2000f, 1200f))
+                    {
+                        if (fAspectRatio > fNativeAspect)
+                        {
+                            transform.sizeDelta = new Vector2((1080f * fAspectRatio) + 4f, 1084f);
+                        }
+                        else if (fAspectRatio < fNativeAspect)
+                        {
+                            transform.sizeDelta = new Vector2(1924f, (1920f / fAspectRatio) + 4f);
+                        }
+
+                        Log.LogInfo($"AspectRatio: Adjusted the size of {__instance.gameObject.transform.parent.gameObject.name}->{__instance.gameObject.name}.");
+                    }
+
+                    // Status background in main menu requires a little extra work.
+                    if (__instance.gameObject.name == "statusBlind")
+                    {
+                        float fWidthOffset = (float)((1080 * fAspectRatio) - 1920) / 2;
+
+                        if (fAspectRatio > fNativeAspect)
+                        {
+                            transform.localScale = new Vector3(fAspectMultiplier + (fAspectMultiplier - 1f), 1f, 1f);
+                            transform.anchoredPosition = new Vector2(50f + fWidthOffset, -50f);
+                        }
+                        else if (fAspectRatio < fNativeAspect)
+                        {
+                            transform.localScale = new Vector3(1f, 1f / fAspectMultiplier, 1f);
+                        }
+                        Log.LogInfo($"AspectRatio: Adjusted the size of {__instance.gameObject.transform.parent.gameObject.name}->{__instance.gameObject.name}.");
                     }
                 }
             }
@@ -733,51 +770,6 @@ namespace HundredHeroesFix
                     }
 
                     Log.LogInfo($"AspectRatio: Scaled fade.");
-                }
-            }
-
-            // Span several backgrounds
-            [HarmonyPatch(typeof(UnityEngine.UI.Image), nameof(UnityEngine.UI.Image.OnEnable))]
-            [HarmonyPostfix]
-            public static void FilterFix(UnityEngine.UI.Image __instance)
-            {
-                if (__instance.gameObject.name == "filter" || __instance.gameObject.name == "Filter" || __instance.gameObject.name == "FIlter" || __instance.gameObject.name == "blackSheet" 
-                    || __instance.gameObject.name == "bgFilter" || __instance.gameObject.name == "filterBlack" || __instance.gameObject.name == "blackBG" || __instance.gameObject.name == "devtreeMask")
-                {
-                    var transform = __instance.gameObject.GetComponent<RectTransform>();
-
-                    if (transform.sizeDelta == new Vector2(1920f, 1080f) || transform.sizeDelta == new Vector2(2000f, 1200f))
-                    {
-                        if (fAspectRatio > fNativeAspect)
-                        {
-                            transform.sizeDelta = new Vector2((1080f * fAspectRatio) + 4f, 1084f);
-                        }
-                        else if (fAspectRatio < fNativeAspect)
-                        {
-                            transform.sizeDelta = new Vector2(1924f, (1920f / fAspectRatio) + 4f);
-                        }
-
-                        Log.LogInfo($"AspectRatio: Adjusted the size of {__instance.gameObject.transform.parent.gameObject.name}->{__instance.gameObject.name}.");
-                    }
-                }
-
-                // Status background in main menu
-                if (__instance.gameObject.name == "statusBlind")
-                {
-                    float fWidthOffset = (float)((1080 * fAspectRatio) - 1920) / 2;
-                    var transform = __instance.gameObject.GetComponent<RectTransform>();
-
-                    if (fAspectRatio > fNativeAspect)
-                    {
-                        transform.localScale = new Vector3(fAspectMultiplier + (fAspectMultiplier - 1f), 1f, 1f);
-                        transform.anchoredPosition = new Vector2(50f + fWidthOffset, -50f);
-                    }
-                    else if (fAspectRatio < fNativeAspect)
-                    {
-                        transform.localScale = new Vector3(1f, 1f / fAspectMultiplier, 1f);
-                    }
-
-                    Log.LogInfo($"AspectRatio: Adjusted the size of {__instance.gameObject.transform.parent.gameObject.name}->{__instance.gameObject.name}.");
                 }
             }
 
