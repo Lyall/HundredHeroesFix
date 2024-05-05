@@ -750,11 +750,11 @@ namespace HundredHeroesFix
                     {
                         if (fAspectRatio > fNativeAspect)
                         {
-                            transform.sizeDelta = new Vector2(1080f * fAspectRatio, 1080f);
+                            transform.sizeDelta = new Vector2((1080f * fAspectRatio) + 4f, 1084f);
                         }
                         else if (fAspectRatio < fNativeAspect)
                         {
-                            transform.sizeDelta = new Vector2(1920f, 1920f / fAspectRatio);
+                            transform.sizeDelta = new Vector2(1924f, (1920f / fAspectRatio) + 4f);
                         }
 
                         Log.LogInfo($"AspectRatio: Adjusted the size of {__instance.gameObject.transform.parent.gameObject.name}->{__instance.gameObject.name}.");
