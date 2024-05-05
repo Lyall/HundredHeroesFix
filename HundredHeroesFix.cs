@@ -43,7 +43,6 @@ namespace HundredHeroesFix
         public static ConfigEntry<bool> bGraphicalTweaks;
         public static ConfigEntry<bool> bVsync;
         public static ConfigEntry<float> fRenderScale;
-        public static ConfigEntry<int> iAnisotropicFiltering;
         public static ConfigEntry<float> fShadowDistance;
         public static ConfigEntry<int> iShadowResolution;
         public static ConfigEntry<int> iShadowCascades;
@@ -185,12 +184,6 @@ namespace HundredHeroesFix
                                 1f,
                                 new ConfigDescription("Set Render Scale. Higher than 1 downsamples and lower than 1 upsamples.",
                                 new AcceptableValueRange<float>(0.1f, 10f)));
-
-            iAnisotropicFiltering = Config.Bind("Graphical Tweaks",
-                                "AnisotropicFiltering",
-                                16,
-                                new ConfigDescription("Set Anisotropic Filtering level.",
-                                new AcceptableValueRange<int>(1, 16)));
 
             fShadowDistance = Config.Bind("Graphical Tweaks",
                                 "ShadowDistance",
@@ -947,11 +940,6 @@ namespace HundredHeroesFix
 
                     URPAsset.m_RenderScale = fClampedRenderScale; // 1f default. Normally clamped to 2f but setting member variable instead of renderScale will get us past that limit.
                     Log.LogInfo($"Graphical Tweaks: Set render scale to {URPAsset.m_RenderScale}");
-
-                    // Anisotropic filtering
-                    QualitySettings.anisotropicFiltering = AnisotropicFiltering.ForceEnable;
-                    Texture.SetGlobalAnisotropicFilteringLimits(iAnisotropicFiltering.Value, iAnisotropicFiltering.Value);
-                    Log.LogInfo($"Graphical Tweaks: Set anisotropic filtering to x{iAnisotropicFiltering.Value}");
 
                     // Shadows
                     var shadowRes = iShadowResolution.Value switch
