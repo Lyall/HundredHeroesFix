@@ -5,7 +5,6 @@ using BepInEx.Logging;
 using HarmonyLib;
 using UnityEngine;
 using System;
-using System.Reflection.Metadata;
 
 namespace HundredHeroesFix
 {
@@ -562,7 +561,7 @@ namespace HundredHeroesFix
 
                 Log.LogInfo($"AspectRatio: Offset and spanned add unit screen.");
             }
-
+            
             // Offset blacksmith build up screen
             [HarmonyPatch(typeof(FieldStage.UI.BlackSmithWindow), nameof(FieldStage.UI.BlackSmithWindow.Awake))]
             [HarmonyPostfix]
@@ -588,7 +587,7 @@ namespace HundredHeroesFix
                     }
                 }
             }
-
+            
             // Offset inn screen
             [HarmonyPatch(typeof(FieldStage.UI.InnCanvas), nameof(FieldStage.UI.InnCanvas.Open))]
             [HarmonyPostfix]
@@ -779,6 +778,36 @@ namespace HundredHeroesFix
                     Log.LogInfo($"AspectRatio: Adjusted the size of screen transitions.");
                 }
             }
+         
+            // Offset war UI
+            [HarmonyPatch(typeof(War.UIWarCanvas), nameof(War.UIWarCanvas.Initialize))]
+            [HarmonyPostfix]
+            public static void OffsetWarUI(War.UIWarCanvas __instance)
+            {
+                var warStageRuleTransform = __instance.StageRuleView.gameObject.GetComponent<RectTransform>();
+                var warHeaderTransform = __instance.StageTitle.gameObject.GetComponent<RectTransform>();
+                var areaInfoTransform = __instance.AreaInformationPanel.gameObject.GetComponent<RectTransform>();
+                var warLogTransform = __instance.BattleLogWindow.gameObject.GetComponent<RectTransform>();
+                var miniMapTransform = __instance.MiniMap.gameObject.GetComponent<RectTransform>();
+                var allyInfoTransform = __instance.PlayerActionSelection.gameObject.GetComponent<RectTransform>();
+                var warCorpsTransform = __instance.CorpsInformation.gameObject.GetComponent<RectTransform>();
+                if (fAspectRatio > fNativeAspect)
+                {
+                    float fAnchorOffset = (float)fHUDWidthOffset / iCustomResX.Value;
+                    warLogTransform.anchorMax = warLogTransform.anchorMin = new Vector2(1f - fAnchorOffset, 0f);
+                    miniMapTransform.anchorMax = miniMapTransform.anchorMin = new Vector2(1f - fAnchorOffset, 1f);
+                    areaInfoTransform.anchorMax = areaInfoTransform.anchorMin = new Vector2(fAnchorOffset, 1f);
+                    warHeaderTransform.anchorMax = warHeaderTransform.anchorMin = new Vector2(fAnchorOffset, 1f);
+                    warStageRuleTransform.anchorMax = warStageRuleTransform.anchorMin = new Vector2(fAnchorOffset, 1f);
+                    allyInfoTransform.anchorMax = allyInfoTransform.anchorMin = new Vector2(fAnchorOffset, 1f);
+                    warCorpsTransform.anchorMax = allyInfoTransform.anchorMin = new Vector2(fAnchorOffset, 1f);
+                }
+                else if (fAspectRatio < fNativeAspect)
+                {
+                    // TODO
+                }
+                Log.LogInfo($"AspectRatio: Offset war UI.");
+            }
 
             // Span war scene clouds
             [HarmonyPatch(typeof(War.WarScene), nameof(War.WarScene.SetViewMode))]
@@ -798,7 +827,7 @@ namespace HundredHeroesFix
                         // Not necessary
                     }
 
-                    Log.LogInfo($"AspectRatio: Adjusted the size of screen transitions.");
+                    Log.LogInfo($"AspectRatio: Adjusted the size of war clouds.");
                 }
             }
         }
