@@ -5,6 +5,7 @@ using BepInEx.Logging;
 using HarmonyLib;
 using UnityEngine;
 using System;
+using System.Reflection.Metadata;
 
 namespace HundredHeroesFix
 {
@@ -445,7 +446,7 @@ namespace HundredHeroesFix
             [HarmonyPostfix]
             public static void FixDofBug()
             {
-                // Run UpdateDofOption() to disable dof in any cinemachine volumes
+                // Run UpdateDofOption() to enable/disable dof in any cinemachine volumes
                 GameManager.Instance.SaveDataManager.SystemData.Display.UpdateDofOption();   
             }
 
@@ -678,7 +679,8 @@ namespace HundredHeroesFix
             [HarmonyPostfix]
             public static void FilterFix(UnityEngine.UI.Image __instance)
             {
-                if (__instance.gameObject.name == "filter" || __instance.gameObject.name == "Filter" || __instance.gameObject.name == "FIlter" || __instance.gameObject.name == "blackSheet" || __instance.gameObject.name == "bgFilter" || __instance.gameObject.name == "filterBlack")
+                if (__instance.gameObject.name == "filter" || __instance.gameObject.name == "Filter" || __instance.gameObject.name == "FIlter" || __instance.gameObject.name == "blackSheet" 
+                    || __instance.gameObject.name == "bgFilter" || __instance.gameObject.name == "filterBlack" || __instance.gameObject.name == "blackBG")
                 {
                     var transform = __instance.gameObject.GetComponent<RectTransform>();
 
@@ -768,6 +770,28 @@ namespace HundredHeroesFix
                     if (fAspectRatio > fNativeAspect)
                     {
                         transform.localScale = new Vector3(1.78f * fAspectMultiplier, 1.78f, 1.78f);
+                    }
+                    else if (fAspectRatio < fNativeAspect)
+                    {
+                        // Not necessary
+                    }
+
+                    Log.LogInfo($"AspectRatio: Adjusted the size of screen transitions.");
+                }
+            }
+
+            // Span war scene clouds
+            [HarmonyPatch(typeof(War.WarScene), nameof(War.WarScene.SetViewMode))]
+            [HarmonyPostfix]
+            public static void WarBackground(War.WarScene __instance)
+            {
+                if (__instance.MapCameraSettings.BackCamera != null)
+                {
+                    var transform = __instance.MapCameraSettings.BackCamera.gameObject.GetComponent<Transform>();
+
+                    if (fAspectRatio > fNativeAspect)
+                    {
+                        transform.localScale = new Vector3(1f * fAspectMultiplier, 1f, 1f);
                     }
                     else if (fAspectRatio < fNativeAspect)
                     {
