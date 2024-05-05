@@ -5,6 +5,7 @@ using BepInEx.Logging;
 using HarmonyLib;
 using UnityEngine;
 using System;
+using System.Linq;
 
 namespace HundredHeroesFix
 {
@@ -23,6 +24,7 @@ namespace HundredHeroesFix
         public static ConfigEntry<bool> bSkipIntroLogos;
         public static ConfigEntry<bool> bSkipOpeningMovie;
         public static ConfigEntry<bool> bDisableCursor;
+        public static ConfigEntry<bool> bSpannedUI;
         public static ConfigEntry<bool> bControllerGlyphs;
         public static ConfigEntry<int> iControllerStyle;
 
@@ -112,6 +114,11 @@ namespace HundredHeroesFix
                                 "Enabled",
                                 true,
                                 "Set to true to disable showing the mouse cursor.");
+
+            bSpannedUI = Config.Bind("Spanned UI",
+                                "Enabled",
+                                false,
+                                "Set to true to allow parts of the UI to remain spanned (to the edges of the screen). Note that this may cause visual issues.");
 
             bControllerGlyphs = Config.Bind("Force Controller Icons",
                                 "Enabled",
@@ -523,118 +530,6 @@ namespace HundredHeroesFix
                 }
             }
 
-            // Offset and span the add unit screen
-            [HarmonyPatch(typeof(FieldStage.UI.AddUnit), nameof(FieldStage.UI.AddUnit.Show))]
-            [HarmonyPostfix]
-            public static void AddUnitPos(FieldStage.UI.AddUnit __instance)
-            {
-                if (fAspectRatio > fNativeAspect)
-                {
-                    if (__instance.gameObject.transform.localPosition.x == 0)
-                    {
-                        float fWidthOffset = (float)((1080 * fAspectRatio) - 1920) / 2;
-                        __instance.gameObject.transform.AddLocalPositionX(fWidthOffset);
-                    }
-
-                    // Span background elements
-                    __instance.transform.GetChild(0).localScale = new Vector3(1f * fAspectMultiplier, 1f, 1f); // blackBarDown
-                    __instance.transform.GetChild(1).localScale = new Vector3(1f * fAspectMultiplier, 1f, 1f); // blackBarUp
-                    __instance.transform.GetChild(2).localScale = new Vector3(1f * fAspectMultiplier, 1f, 1f); // blackSheet
-                }
-                else if (fAspectRatio < fNativeAspect)
-                {
-                    if (__instance.gameObject.transform.localPosition.y == 0)
-                    {
-                        float fHeightOffset = (float)((1920 / fAspectRatio) - 1080) / 2;
-                        __instance.gameObject.transform.AddLocalPositionY(-fHeightOffset);
-                    }
-
-                    // Span background elements
-                    float fPosAnchorOffset = (float)1f + (fHUDHeightOffset / iCustomResY.Value);
-                    float fNegAnchorOffset = (float)1f - (fHUDHeightOffset / iCustomResY.Value);
-                    __instance.transform.GetChild(0).GetComponent<RectTransform>().anchorMax = new Vector2(0f, fNegAnchorOffset); // blackBarDown
-                    __instance.transform.GetChild(0).GetComponent<RectTransform>().anchorMin = new Vector2(0f, fNegAnchorOffset); // blackBarDown
-                    __instance.transform.GetChild(1).GetComponent<RectTransform>().anchorMax = new Vector2(0f, fPosAnchorOffset); // blackBarUp
-                    __instance.transform.GetChild(1).GetComponent<RectTransform>().anchorMin = new Vector2(0f, fPosAnchorOffset); // blackBarUp
-                    __instance.transform.GetChild(2).localScale = new Vector3(1f, 1f / fAspectMultiplier, 1f); ; // blackSheet
-                }
-
-                Log.LogInfo($"AspectRatio: Offset and spanned add unit screen.");
-            }
-            
-            // Offset blacksmith build up screen
-            [HarmonyPatch(typeof(FieldStage.UI.BlackSmithWindow), nameof(FieldStage.UI.BlackSmithWindow.Awake))]
-            [HarmonyPostfix]
-            public static void BlacksmithPos(FieldStage.UI.BlackSmithWindow __instance)
-            {
-                if (fAspectRatio > fNativeAspect)
-                {
-                    if (__instance.gameObject != null)
-                    {
-                        float fWidthOffset = (float)((1080 * fAspectRatio) - 1920) / 2;
-                        __instance.gameObject.GetComponent<RectTransform>().AddLocalPositionX(fWidthOffset);
-
-                        if (__instance.gameObject.transform.GetChild(0).gameObject.transform.GetChild(0).gameObject.name == "BGblackLeft")
-                        {
-                            var localPos = __instance.gameObject.transform.GetChild(0).gameObject.transform.GetChild(0).gameObject.GetComponent<RectTransform>().localPosition;
-                            localPos.x -= fWidthOffset;
-
-                            __instance.gameObject.transform.GetChild(0).gameObject.transform.GetChild(0).gameObject.GetComponent<RectTransform>().localPosition = localPos;
-                            __instance.gameObject.transform.GetChild(0).gameObject.transform.GetChild(0).gameObject.GetComponent<RectTransform>().localScale = new Vector3(1f * fAspectMultiplier, 1f, 1f);
-                        }
-
-                        Log.LogInfo($"AspectRatio: Offset blacksmith buildup screen.");
-                    }
-                }
-            }
-            
-            // Offset inn screen
-            [HarmonyPatch(typeof(FieldStage.UI.InnCanvas), nameof(FieldStage.UI.InnCanvas.Open))]
-            [HarmonyPostfix]
-            public static void InnCanvasPos(FieldStage.UI.InnCanvas __instance)
-            {
-                if (__instance._header != null && __instance._dialogRoot != null)
-                {
-                    if (fAspectRatio > fNativeAspect)
-                    {
-                        float fAnchorOffset = (float)fHUDWidthOffset / iCustomResX.Value;
-                        __instance._dialogRoot.gameObject.GetComponent<RectTransform>().anchorMax = new Vector2(fAnchorOffset, 1f);
-                        __instance._dialogRoot.gameObject.GetComponent<RectTransform>().anchorMin = new Vector2(fAnchorOffset, 1f);
-                        __instance._header.gameObject.GetComponent<RectTransform>().anchorMax = new Vector2(fAnchorOffset, 1f);
-                        __instance._header.gameObject.GetComponent<RectTransform>().anchorMin = new Vector2(fAnchorOffset, 1f);
-                    }
-                    else if (fAspectRatio < fNativeAspect)
-                    {
-                        float fAnchorOffset = (float)1f - (fHUDHeightOffset / iCustomResY.Value);
-                        __instance._dialogRoot.gameObject.GetComponent<RectTransform>().anchorMax = new Vector2(0f, fAnchorOffset);
-                        __instance._dialogRoot.gameObject.GetComponent<RectTransform>().anchorMin = new Vector2(0f, fAnchorOffset);
-                        __instance._header.gameObject.GetComponent<RectTransform>().anchorMax = new Vector2(0f, fAnchorOffset);
-                        __instance._header.gameObject.GetComponent<RectTransform>().anchorMin = new Vector2(0f, fAnchorOffset);
-                    }
-
-                    Log.LogInfo($"AspectRatio: Offset inn screen.");
-                }
-            }
-
-            // Fix broken screens that are zoomed in
-            [HarmonyPatch(typeof(UnityEngine.UI.CanvasScaler), nameof(UnityEngine.UI.CanvasScaler.OnEnable))]
-            [HarmonyPostfix]
-            public static void LoadScreenFix(UnityEngine.UI.CanvasScaler __instance)
-            {
-                if (fAspectRatio > fNativeAspect)
-                {
-                    if (__instance != null)
-                    {
-                        if (__instance.referenceResolution == new Vector2(1920f, 600f) || (__instance.referenceResolution == new Vector2(1920f, 1080f) && __instance.screenMatchMode == UnityEngine.UI.CanvasScaler.ScreenMatchMode.MatchWidthOrHeight))
-                        {
-                            __instance.referenceResolution = new Vector2(1920f, 1080f);
-                            __instance.screenMatchMode = UnityEngine.UI.CanvasScaler.ScreenMatchMode.Expand;
-                            Log.LogInfo($"AspectRatio: Fixed broken screen {__instance.transform.parent.gameObject.name}.");
-                        }
-                    }
-                }
-            }
-
             // Adjust vignette
             [HarmonyPatch(typeof(UnityEngine.Rendering.Volume), nameof(UnityEngine.Rendering.Volume.OnEnable))]
             [HarmonyPostfix]
@@ -651,7 +546,182 @@ namespace HundredHeroesFix
                 }
             }
 
-            // Span screen fades
+            // Fix screens that are zoomed
+            [HarmonyPatch(typeof(UnityEngine.UI.CanvasScaler), nameof(UnityEngine.UI.CanvasScaler.OnEnable))]
+            [HarmonyPostfix]
+            public static void LoadScreenFix(UnityEngine.UI.CanvasScaler __instance)
+            {
+
+                if (__instance.referenceResolution == new Vector2(1920f, 600f) || (__instance.referenceResolution == new Vector2(1920f, 1080f) && __instance.screenMatchMode == UnityEngine.UI.CanvasScaler.ScreenMatchMode.MatchWidthOrHeight))
+                {
+                    if (fAspectRatio > fNativeAspect)
+                    {
+                        __instance.referenceResolution = new Vector2(1920f, 1080f);
+                        __instance.screenMatchMode = UnityEngine.UI.CanvasScaler.ScreenMatchMode.Expand;
+                        Log.LogInfo($"AspectRatio: Fixed broken screen {__instance.transform.parent.gameObject.name}.");
+                    }
+                }
+            }
+
+            // Fix offset screens and constrain them to 16:9
+            [HarmonyPatch(typeof(UnityEngine.UI.CanvasScaler), nameof(UnityEngine.UI.CanvasScaler.OnEnable))]
+            [HarmonyPostfix]
+            public static void OffsetScreenFix(UnityEngine.UI.CanvasScaler __instance)
+            {
+                // Names of broken UI canvases
+                string[] BrokenUI = { "UIWarCanvas(Clone)", "inn_canvas(Clone)", "Field_MainUI (field_canvas)", "battle_canvas(Clone)", "FacilityPartyOrganizationCanvas(Clone)" };
+
+                // Set certain UI canvases to 16:9
+                if (__instance.GetComponent<Canvas>().isRootCanvas && (__instance.transform.parent.gameObject != null) && !bSpannedUI.Value)
+                {
+                    //if ((__instance.GetComponent<RectTransform>().sizeDelta.x == 1920.00f) || (__instance.GetComponent<RectTransform>().sizeDelta.y == 1080.00f))
+                    //{
+                    if (BrokenUI.Contains(__instance.gameObject.name) || BrokenUI.Contains(__instance.gameObject.transform.parent.gameObject.name))
+                    { 
+                        if (__instance.GetComponent<UnityEngine.UI.LayoutElement>() == null)
+                        {
+                            __instance.gameObject.AddComponent<UnityEngine.UI.LayoutElement>();
+                        }
+
+                        if (__instance.GetComponent<UnityEngine.UI.ContentSizeFitter>() == null)
+                        {
+                            __instance.gameObject.AddComponent<UnityEngine.UI.ContentSizeFitter>();
+                        }
+
+                        var layoutElement = __instance.gameObject.GetComponent<UnityEngine.UI.LayoutElement>();
+                        var contentFitter = __instance.gameObject.GetComponent<UnityEngine.UI.ContentSizeFitter>();
+
+                        layoutElement.preferredWidth = 1920;
+                        layoutElement.preferredHeight = 1080;
+
+                        if (fAspectRatio > fNativeAspect)
+                        {
+                            contentFitter.horizontalFit = UnityEngine.UI.ContentSizeFitter.FitMode.PreferredSize;
+                        }
+                        else if (fAspectRatio < fNativeAspect)
+                        {
+                            contentFitter.verticalFit = UnityEngine.UI.ContentSizeFitter.FitMode.PreferredSize;
+                        }
+
+                        Log.LogInfo($"Set UI to 16:9 for {__instance.gameObject.transform.parent.gameObject.name}->{__instance.gameObject.name}.");
+                    }
+                }
+            }
+
+            // Span the war results screen
+            [HarmonyPatch(typeof(War.WarStageClearView), nameof(War.WarStageClearView.Awake))]
+            [HarmonyPostfix]
+            public static void WarResultSpan(FieldStage.UI.AddUnit __instance)
+            {
+                if (__instance.GetComponent<UnityEngine.UI.LayoutElement>() == null)
+                {
+                    __instance.gameObject.AddComponent<UnityEngine.UI.LayoutElement>();
+                }
+
+                if (__instance.GetComponent<UnityEngine.UI.ContentSizeFitter>() == null)
+                {
+                    __instance.gameObject.AddComponent<UnityEngine.UI.ContentSizeFitter>();
+                }
+
+                var layoutElement = __instance.gameObject.GetComponent<UnityEngine.UI.LayoutElement>();
+                var contentFitter = __instance.gameObject.GetComponent<UnityEngine.UI.ContentSizeFitter>();
+
+                layoutElement.preferredWidth = 1920;
+                layoutElement.preferredHeight = 1080;
+
+                if (fAspectRatio > fNativeAspect)
+                {
+                    // Span background elements
+                    contentFitter.horizontalFit = UnityEngine.UI.ContentSizeFitter.FitMode.PreferredSize;
+                    __instance.transform.GetChild(0).localScale = new Vector3(1f * fAspectMultiplier, 1f, 1f); // blackBarDown
+                    __instance.transform.GetChild(1).localScale = new Vector3(1f * fAspectMultiplier, 1f, 1f); // blackBarUp
+                    __instance.transform.GetChild(2).localScale = new Vector3(1f * fAspectMultiplier, 1f, 1f); // blackSheet
+                }
+                else if (fAspectRatio < fNativeAspect)
+                {
+                    // Span background elements
+                    contentFitter.verticalFit = UnityEngine.UI.ContentSizeFitter.FitMode.PreferredSize;
+                    float fPosAnchorOffset = (float)1f + (fHUDHeightOffset / iCustomResY.Value);
+                    float fNegAnchorOffset = (float)1f - (fHUDHeightOffset / iCustomResY.Value);
+                    __instance.transform.GetChild(0).GetComponent<RectTransform>().anchorMax = new Vector2(0f, fNegAnchorOffset); // blackBarDown
+                    __instance.transform.GetChild(0).GetComponent<RectTransform>().anchorMin = new Vector2(0f, fNegAnchorOffset); // blackBarDown
+                    __instance.transform.GetChild(1).GetComponent<RectTransform>().anchorMax = new Vector2(0f, fPosAnchorOffset); // blackBarUp
+                    __instance.transform.GetChild(1).GetComponent<RectTransform>().anchorMin = new Vector2(0f, fPosAnchorOffset); // blackBarUp
+                    __instance.transform.GetChild(2).localScale = new Vector3(1f, 1f / fAspectMultiplier, 1f); ; // blackSheet
+                }
+
+                Log.LogInfo($"AspectRatio: Spanned war results screen.");
+            }
+
+            // Span the add unit screen
+            [HarmonyPatch(typeof(FieldStage.UI.AddUnit), nameof(FieldStage.UI.AddUnit.Show))]
+            [HarmonyPostfix]
+            public static void AddUnitSpan(FieldStage.UI.AddUnit __instance)
+            {
+                if (__instance.GetComponent<UnityEngine.UI.LayoutElement>() == null)
+                {
+                    __instance.gameObject.AddComponent<UnityEngine.UI.LayoutElement>();
+                }
+
+                if (__instance.GetComponent<UnityEngine.UI.ContentSizeFitter>() == null)
+                {
+                    __instance.gameObject.AddComponent<UnityEngine.UI.ContentSizeFitter>();
+                }
+
+                var layoutElement = __instance.gameObject.GetComponent<UnityEngine.UI.LayoutElement>();
+                var contentFitter = __instance.gameObject.GetComponent<UnityEngine.UI.ContentSizeFitter>();
+
+                layoutElement.preferredWidth = 1920;
+                layoutElement.preferredHeight = 1080;
+
+                if (fAspectRatio > fNativeAspect)
+                {
+                    // Span background elements
+                    contentFitter.horizontalFit = UnityEngine.UI.ContentSizeFitter.FitMode.PreferredSize;
+                    __instance.transform.GetChild(0).localScale = new Vector3(1f * fAspectMultiplier, 1f, 1f); // blackBarDown
+                    __instance.transform.GetChild(1).localScale = new Vector3(1f * fAspectMultiplier, 1f, 1f); // blackBarUp
+                    __instance.transform.GetChild(2).localScale = new Vector3(1f * fAspectMultiplier, 1f, 1f); // blackSheet
+                }
+                else if (fAspectRatio < fNativeAspect)
+                {
+                    // Span background elements
+                    contentFitter.verticalFit = UnityEngine.UI.ContentSizeFitter.FitMode.PreferredSize;
+                    float fPosAnchorOffset = (float)1f + (fHUDHeightOffset / iCustomResY.Value);
+                    float fNegAnchorOffset = (float)1f - (fHUDHeightOffset / iCustomResY.Value);
+                    __instance.transform.GetChild(0).GetComponent<RectTransform>().anchorMax = new Vector2(0f, fNegAnchorOffset); // blackBarDown
+                    __instance.transform.GetChild(0).GetComponent<RectTransform>().anchorMin = new Vector2(0f, fNegAnchorOffset); // blackBarDown
+                    __instance.transform.GetChild(1).GetComponent<RectTransform>().anchorMax = new Vector2(0f, fPosAnchorOffset); // blackBarUp
+                    __instance.transform.GetChild(1).GetComponent<RectTransform>().anchorMin = new Vector2(0f, fPosAnchorOffset); // blackBarUp
+                    __instance.transform.GetChild(2).localScale = new Vector3(1f, 1f / fAspectMultiplier, 1f); ; // blackSheet
+                }
+
+                Log.LogInfo($"AspectRatio: Spanned add unit screen.");
+            }
+
+            // Span scenario fades
+            [HarmonyPatch(typeof(Scenario.UI.UIScenerioCanvas), nameof(Scenario.UI.UIScenerioCanvas.OnEnable))]
+            [HarmonyPostfix]
+            public static void ScenarioFadeFix(Scenario.UI.UIScenerioCanvas __instance)
+            {
+                if (__instance._fade != null)
+                {
+                    var fadeTransform = __instance._fade._image.gameObject.GetComponent<RectTransform>();
+                    var underFadeTransform = __instance._underFade._image.gameObject.GetComponent<RectTransform>();
+                    var skipFade = __instance._skip._mask.gameObject.GetComponent<RectTransform>();
+
+                    if (fAspectRatio > fNativeAspect)
+                    {
+                        fadeTransform.localScale = underFadeTransform.localScale = skipFade.localScale = new Vector3(1f * fAspectMultiplier, 1f, 1f);
+                    }
+                    else if (fAspectRatio < fNativeAspect)
+                    {
+                        fadeTransform.localScale = underFadeTransform.localScale = skipFade.localScale = new Vector3(1f, 1f / fAspectMultiplier, 1f);
+                    }
+                }
+                Log.LogInfo($"AspectRatio: Scaled scenario fade.");
+            }
+
+            // Span other fades
             [HarmonyPatch(typeof(Framework.FadeOrganizer), nameof(Framework.FadeOrganizer.Start))]
             [HarmonyPostfix]
             public static void FadeFix(Framework.FadeOrganizer __instance)
@@ -666,7 +736,7 @@ namespace HundredHeroesFix
                     }
                     else if (fAspectRatio < fNativeAspect)
                     {
-                        // Not necessary
+                        fadeTransform.localScale = new Vector3(1f, 1f / fAspectMultiplier, 1f);
                     }
 
                     Log.LogInfo($"AspectRatio: Scaled fade.");
@@ -679,7 +749,7 @@ namespace HundredHeroesFix
             public static void FilterFix(UnityEngine.UI.Image __instance)
             {
                 if (__instance.gameObject.name == "filter" || __instance.gameObject.name == "Filter" || __instance.gameObject.name == "FIlter" || __instance.gameObject.name == "blackSheet" 
-                    || __instance.gameObject.name == "bgFilter" || __instance.gameObject.name == "filterBlack" || __instance.gameObject.name == "blackBG")
+                    || __instance.gameObject.name == "bgFilter" || __instance.gameObject.name == "filterBlack" || __instance.gameObject.name == "blackBG" || __instance.gameObject.name == "devtreeMask")
                 {
                     var transform = __instance.gameObject.GetComponent<RectTransform>();
 
@@ -698,6 +768,7 @@ namespace HundredHeroesFix
                     }
                 }
 
+                // Status background in main menu
                 if (__instance.gameObject.name == "statusBlind")
                 {
                     float fWidthOffset = (float)((1080 * fAspectRatio) - 1920) / 2;
@@ -778,38 +849,30 @@ namespace HundredHeroesFix
                     Log.LogInfo($"AspectRatio: Adjusted the size of screen transitions.");
                 }
             }
-         
-            // Offset war UI
+
+            // Span war screen effects
             [HarmonyPatch(typeof(War.UIWarCanvas), nameof(War.UIWarCanvas.Initialize))]
             [HarmonyPostfix]
-            public static void OffsetWarUI(War.UIWarCanvas __instance)
+            public static void WarScreenEffects(War.UIWarCanvas __instance)
             {
-                var warStageRuleTransform = __instance.StageRuleView.gameObject.GetComponent<RectTransform>();
-                var warHeaderTransform = __instance.StageTitle.gameObject.GetComponent<RectTransform>();
-                var areaInfoTransform = __instance.AreaInformationPanel.gameObject.GetComponent<RectTransform>();
-                var warLogTransform = __instance.BattleLogWindow.gameObject.GetComponent<RectTransform>();
-                var miniMapTransform = __instance.MiniMap.gameObject.GetComponent<RectTransform>();
-                var allyInfoTransform = __instance.PlayerActionSelection.gameObject.GetComponent<RectTransform>();
-                var warCorpsTransform = __instance.CorpsInformation.gameObject.GetComponent<RectTransform>();
-                if (fAspectRatio > fNativeAspect)
+                if (__instance.CrossFade != null)
                 {
-                    float fAnchorOffset = (float)fHUDWidthOffset / iCustomResX.Value;
-                    warLogTransform.anchorMax = warLogTransform.anchorMin = new Vector2(1f - fAnchorOffset, 0f);
-                    miniMapTransform.anchorMax = miniMapTransform.anchorMin = new Vector2(1f - fAnchorOffset, 1f);
-                    areaInfoTransform.anchorMax = areaInfoTransform.anchorMin = new Vector2(fAnchorOffset, 1f);
-                    warHeaderTransform.anchorMax = warHeaderTransform.anchorMin = new Vector2(fAnchorOffset, 1f);
-                    warStageRuleTransform.anchorMax = warStageRuleTransform.anchorMin = new Vector2(fAnchorOffset, 1f);
-                    allyInfoTransform.anchorMax = allyInfoTransform.anchorMin = new Vector2(fAnchorOffset, 1f);
-                    warCorpsTransform.anchorMax = allyInfoTransform.anchorMin = new Vector2(fAnchorOffset, 1f);
+                    var transform = __instance.CrossFade.transform.parent.GetComponent<Transform>();
+
+                    if (fAspectRatio > fNativeAspect)
+                    {
+                        transform.localScale = new Vector3(1f * fAspectMultiplier, 1f, 1f);
+                    }
+                    else if (fAspectRatio < fNativeAspect)
+                    {
+                        transform.localScale = new Vector3(1f, 1f / fAspectMultiplier, 1f);
+                    }
+
+                    Log.LogInfo($"AspectRatio: Adjusted the size of war UI screen effects.");
                 }
-                else if (fAspectRatio < fNativeAspect)
-                {
-                    // TODO
-                }
-                Log.LogInfo($"AspectRatio: Offset war UI.");
             }
 
-            // Span war scene clouds
+            // Span war scene clouds 
             [HarmonyPatch(typeof(War.WarScene), nameof(War.WarScene.SetViewMode))]
             [HarmonyPostfix]
             public static void WarBackground(War.WarScene __instance)
@@ -824,10 +887,21 @@ namespace HundredHeroesFix
                     }
                     else if (fAspectRatio < fNativeAspect)
                     {
-                        // Not necessary
+                        transform.localScale = new Vector3(1f, 1f / fAspectMultiplier, 1f);
                     }
 
                     Log.LogInfo($"AspectRatio: Adjusted the size of war clouds.");
+                }
+            }
+
+            // Fix war scene camera at <16:9
+            [HarmonyPatch(typeof(Camera), nameof(Camera.orthographicSize), MethodType.Setter)]
+            [HarmonyPrefix]
+            public static void WarOrthoCam(Camera __instance, ref float __0)
+            {
+                if (fAspectRatio < fNativeAspect)
+                {
+                    __0 /= fAspectMultiplier;
                 }
             }
         }
