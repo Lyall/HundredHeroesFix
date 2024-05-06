@@ -402,6 +402,11 @@ namespace HundredHeroesFix
             [HarmonyPostfix]
             public static void ManualBattleTurboDisable(Battle.Engine __instance)
             {
+                // Remove battle finished 2-second delay
+                var battleDefine = __instance.Context.MasterBundle.BattleDefine;
+                battleDefine._battleFinishedDelay = 0;
+                battleDefine._battleExitFadeOutTime = 0.5f;
+
                 // Don't reset game speed if it's an auto battle
                 if (bHasChangedTimescale && !__instance.CommandSelectOperation.ContinuateAutoCommand)
                 {
