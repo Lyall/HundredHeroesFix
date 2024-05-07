@@ -27,6 +27,7 @@ namespace HundredHeroesFix
         public static ConfigEntry<bool> bSpannedUI;
         public static ConfigEntry<bool> bControllerGlyphs;
         public static ConfigEntry<int> iControllerStyle;
+        public static ConfigEntry<float> fMoveSpeedMulti;
 
         // Auto-Advance Tweaks
         public static ConfigEntry<bool> bDialogTweaks;
@@ -130,6 +131,12 @@ namespace HundredHeroesFix
                                 1,
                                 new ConfigDescription("Set controller icon style. 1 = Dualshock (DS4), 2 = DualSense (DS5), 3 = Xbox",
                                 new AcceptableValueRange<int>(1, 3)));
+
+            fMoveSpeedMulti = Config.Bind("Player Move Speed",
+                                "SpeedMultiplier",
+                                1f,
+                                new ConfigDescription("Set player move speed multiplier. Higher values cause the player to move faster.",
+                                new AcceptableValueRange<float>(1f, 8f)));
 
             // Battle Tweaks
             bBattleTweaks = Config.Bind("Battle Tweaks",
@@ -284,6 +291,11 @@ namespace HundredHeroesFix
             {
                 Log.LogInfo($"Patches: Applying auto-battle patch.");
                 Harmony.CreateAndPatchAll(typeof(BattlePatch));
+            }
+            if (fMoveSpeedMulti.Value > 1.0f)
+            {
+                Log.LogInfo($"Patches: Applying player move speed patch.");
+                Harmony.CreateAndPatchAll(typeof(MoveSpeedPatch));
             }
             if (bDisableCursor.Value)
             {
@@ -1026,6 +1038,19 @@ namespace HundredHeroesFix
                         Log.LogInfo($"Graphical Tweaks: Disabled chromatic aberration on {__instance.gameObject.name}.");
                     }
                 }
+            }
+        }
+
+        [HarmonyPatch]
+        public class MoveSpeedPatch
+        {
+            // Player move speed
+            [HarmonyPatch(typeof(FieldStage.Player), nameof(FieldStage.Player.Move))]
+            [HarmonyPrefix]
+            public static void SetPlayerMoveSpeed(FieldStage.Player __instance, ref float __2)
+            {
+                __2 *= fMoveSpeedMulti.Value;
+
             }
         }
     }
