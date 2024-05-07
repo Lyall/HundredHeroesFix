@@ -445,13 +445,21 @@ namespace HundredHeroesFix
                 }
             }
 
-            // Fix depth of field setting not applying in cutscenes
-            [HarmonyPatch(typeof(Cinemachine.CinemachineBrain), nameof(Cinemachine.CinemachineBrain.OnEnable))]
+            // Fix depth of field bug
+            [HarmonyPatch(typeof(UnityEngine.Rendering.VolumeProfile), nameof(UnityEngine.Rendering.VolumeProfile.OnEnable))]
             [HarmonyPostfix]
-            public static void FixDofBug()
+            public static void FixDOFBug(UnityEngine.Rendering.VolumeProfile __instance)
             {
-                // Run UpdateDofOption() to enable/disable dof in any cinemachine volumes
-                GameManager.Instance.SaveDataManager.SystemData.Display.UpdateDofOption();   
+                int iDisableDOF = GameManager.Instance.SystemData._display._dofMode;
+                if (iDisableDOF == 1)
+                {
+                    __instance.TryGet(out UnityEngine.Rendering.Universal.DepthOfField dof);
+                    if (dof)
+                    {
+                        dof.active = false;
+                        Log.LogInfo($"Misc: DoF Bug: Disabled depth of field on profile {__instance.name}.");
+                    }
+                }
             }
 
             // Set vsync/target framerate
