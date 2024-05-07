@@ -560,40 +560,46 @@ namespace HundredHeroesFix
                     }
                 }
 
-                // Names of broken UI canvases
-                string[] BrokenUI = ["UIWarCanvas(Clone)", "inn_canvas(Clone)", "Field_MainUI (field_canvas)", "battle_canvas(Clone)", "FacilityPartyOrganizationCanvas(Clone)"];
+                // Whitelisted UI
+                string[] WhitelistUI = ["UI_ScenarioDemo(Clone)", "gameover_canvas(Clone)"];
 
                 // Set certain UI canvases to 16:9
                 if (__instance.GetComponent<Canvas>().isRootCanvas && (__instance.transform.parent.gameObject != null) && !bSpannedUI.Value)
                 {
-                    if (BrokenUI.Contains(__instance.gameObject.name) || BrokenUI.Contains(__instance.gameObject.transform.parent.gameObject.name))
-                    { 
-                        if (__instance.GetComponent<UnityEngine.UI.LayoutElement>() == null)
+                    var canvasTransform = __instance.gameObject.GetComponent<RectTransform>();
+
+                    // Check if 1920x1080 canvas
+                    if (canvasTransform.sizeDelta == new Vector2(1920f, 1080f) || canvasTransform.sizeDelta == new Vector2(1080f * fAspectRatio, 1080f) || canvasTransform.sizeDelta == new Vector2(1920f, 1080f / fAspectMultiplier))
+                    {
+                        if (!WhitelistUI.Contains(__instance.gameObject.name) && !WhitelistUI.Contains(__instance.gameObject.transform.parent.gameObject.name))
                         {
-                            __instance.gameObject.AddComponent<UnityEngine.UI.LayoutElement>();
-                        }
+                            if (__instance.GetComponent<UnityEngine.UI.LayoutElement>() == null)
+                            {
+                                __instance.gameObject.AddComponent<UnityEngine.UI.LayoutElement>();
+                            }
 
-                        if (__instance.GetComponent<UnityEngine.UI.ContentSizeFitter>() == null)
-                        {
-                            __instance.gameObject.AddComponent<UnityEngine.UI.ContentSizeFitter>();
-                        }
+                            if (__instance.GetComponent<UnityEngine.UI.ContentSizeFitter>() == null)
+                            {
+                                __instance.gameObject.AddComponent<UnityEngine.UI.ContentSizeFitter>();
+                            }
 
-                        var layoutElement = __instance.gameObject.GetComponent<UnityEngine.UI.LayoutElement>();
-                        var contentFitter = __instance.gameObject.GetComponent<UnityEngine.UI.ContentSizeFitter>();
+                            var layoutElement = __instance.gameObject.GetComponent<UnityEngine.UI.LayoutElement>();
+                            var contentFitter = __instance.gameObject.GetComponent<UnityEngine.UI.ContentSizeFitter>();
 
-                        layoutElement.preferredWidth = 1920;
-                        layoutElement.preferredHeight = 1080;
+                            layoutElement.preferredWidth = 1920;
+                            layoutElement.preferredHeight = 1080;
 
-                        if (fAspectRatio > fNativeAspect)
-                        {
-                            contentFitter.horizontalFit = UnityEngine.UI.ContentSizeFitter.FitMode.PreferredSize;
-                        }
-                        else if (fAspectRatio < fNativeAspect)
-                        {
-                            contentFitter.verticalFit = UnityEngine.UI.ContentSizeFitter.FitMode.PreferredSize;
-                        }
+                            if (fAspectRatio > fNativeAspect)
+                            {
+                                contentFitter.horizontalFit = UnityEngine.UI.ContentSizeFitter.FitMode.PreferredSize;
+                            }
+                            else if (fAspectRatio < fNativeAspect)
+                            {
+                                contentFitter.verticalFit = UnityEngine.UI.ContentSizeFitter.FitMode.PreferredSize;
+                            }
 
-                        Log.LogInfo($"Set UI to 16:9 for {__instance.gameObject.transform.parent.gameObject.name}->{__instance.gameObject.name}.");
+                            Log.LogInfo($"Set UI to 16:9 for {__instance.gameObject.transform.parent.gameObject.name}->{__instance.gameObject.name}.");
+                        } 
                     }
                 }                
             }
