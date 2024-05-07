@@ -1045,12 +1045,12 @@ namespace HundredHeroesFix
         public class MoveSpeedPatch
         {
             // Player move speed
-            [HarmonyPatch(typeof(FieldStage.Player), nameof(FieldStage.Player.Move))]
-            [HarmonyPrefix]
-            public static void SetPlayerMoveSpeed(FieldStage.Player __instance, ref float __2)
+            [HarmonyPatch(typeof(FieldStage.Player), nameof(FieldStage.Player.BaseSpeedRate), MethodType.Setter)]
+            [HarmonyPostfix]
+            public static void SetPlayerMoveSpeed(FieldStage.Player __instance)
             {
-                __2 *= fMoveSpeedMulti.Value;
-
+                Log.LogInfo($"Move Speed: Changed player BaseSpeedRate from {__instance._baseSpeedRate} to {__instance._baseSpeedRate * fMoveSpeedMulti.Value}");
+                __instance._baseSpeedRate *= fMoveSpeedMulti.Value;
             }
         }
     }
