@@ -561,7 +561,7 @@ namespace HundredHeroesFix
                 }
 
                 // Whitelisted UI
-                string[] WhitelistUI = ["UI_ScenarioDemo(Clone)", "gameover_canvas(Clone)"];
+                string[] WhitelistUI = { "UI_ScenarioDemo(Clone)", "gameover_canvas(Clone)" };
 
                 // Set certain UI canvases to 16:9
                 if (__instance.GetComponent<Canvas>().isRootCanvas && (__instance.transform.parent.gameObject != null) && !bSpannedUI.Value)
@@ -610,7 +610,7 @@ namespace HundredHeroesFix
             public static void FilterFix(UnityEngine.UI.Image __instance)
             {
                 // Names of 16:9 backgrounds to span
-                string[] Backgrounds = ["filter", "Filter", "FIlter", "blackSheet", "bgFilter", "filterBlack", "blackBG", "devtreeMask", "statusBlind"];
+                string[] Backgrounds = { "filter", "Filter", "FIlter", "blackSheet", "bgFilter", "filterBlack", "blackBG", "devtreeMask", "statusBlind" };
 
                 if (Backgrounds.Contains(__instance.gameObject.name))
                 {
