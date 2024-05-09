@@ -39,6 +39,7 @@ namespace HundredHeroesFix
         public static ConfigEntry<bool> bBattleTweaks;
         public static ConfigEntry<float> fAutoBattleSpeed;
         public static ConfigEntry<float> fBattleSpeed;
+        public static ConfigEntry<bool> bBattleSpeedGlobal;
 
         // Graphical Tweaks
         public static ConfigEntry<bool> bGraphicalTweaks;
@@ -149,6 +150,11 @@ namespace HundredHeroesFix
                                 1f,
                                 new ConfigDescription("Set auto-battle speed.",
                                 new AcceptableValueRange<float>(1f, 8f)));
+
+            bBattleSpeedGlobal = Config.Bind("Battle Tweaks",
+                                "BattleSpeedGlobal",
+                                false,
+                                "Set to true to enable BattleSpeed to affect all of combat, including menus.");
 
             fBattleSpeed = Config.Bind("Battle Tweaks",
                                 "BattleSpeed",
@@ -389,7 +395,33 @@ namespace HundredHeroesFix
         [HarmonyPatch]
         public class BattlePatch
         {
-            // Enable manual battle turbo
+            // Enable global battle turbo
+            [HarmonyPatch(typeof(Battle.Engine), nameof(Battle.Engine.Start))]
+            [HarmonyPostfix]
+            public static void GlobalBattleTurboEnable(Battle.Engine __instance)
+            {
+                if (fBattleSpeed.Value != 1.0f && bBattleSpeedGlobal.Value)
+                {
+                    bHasChangedTimescale = true;
+                    Time.timeScale = fBattleSpeed.Value;
+                    Log.LogInfo($"Battle: Global: Changed game speed to {fBattleSpeed.Value}.");
+                }
+            }
+
+            // Disable global battle turbo (just in-case)
+            [HarmonyPatch(typeof(Battle.Engine), nameof(Battle.Engine.Terminate))]
+            [HarmonyPostfix]
+            public static void GlobalBattleTurboDisable(Battle.Engine __instance)
+            {
+                if (fBattleSpeed.Value != 1.0f && bBattleSpeedGlobal.Value)
+                {
+                    bHasChangedTimescale = false;
+                    Time.timeScale = 1.0f;
+                    Log.LogInfo($"Battle: Global: Reset game speed.");
+                }
+            }
+
+            // Enable battle turbo
             [HarmonyPatch(typeof(Battle.Engine), nameof(Battle.Engine.EndCommandSelect))]
             [HarmonyPostfix]
             public static void BattleTurboEnable(Battle.Engine __instance)
@@ -409,7 +441,7 @@ namespace HundredHeroesFix
                 }
             }
 
-            // Disable manual battle turbo
+            // Disable battle turbo
             [HarmonyPatch(typeof(Battle.Engine), nameof(Battle.Engine.BeginCommandSelect))]
             [HarmonyPostfix]
             public static void ManualBattleTurboDisable(Battle.Engine __instance)
@@ -420,7 +452,7 @@ namespace HundredHeroesFix
                 battleDefine._battleExitFadeOutTime = 0.5f;
 
                 // Don't reset game speed if it's an auto battle
-                if (bHasChangedTimescale && !__instance.CommandSelectOperation.ContinuateAutoCommand)
+                if (bHasChangedTimescale && !__instance.CommandSelectOperation.ContinuateAutoCommand && !bBattleSpeedGlobal.Value)
                 {
                     bHasChangedTimescale = false;
                     Time.timeScale = 1.0f;
@@ -433,7 +465,7 @@ namespace HundredHeroesFix
             [HarmonyPostfix]
             public static void AutoBattleTurboDisable(Battle.Command.CommandSelectOperation __instance, ref bool __0)
             {
-                if (__0 == false && bHasChangedTimescale)
+                if (__0 == false && bHasChangedTimescale && !bBattleSpeedGlobal.Value)
                 {
                     bHasChangedTimescale = false;
                     Time.timeScale = 1;
