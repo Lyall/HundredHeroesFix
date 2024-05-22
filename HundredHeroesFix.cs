@@ -25,6 +25,7 @@ namespace HundredHeroesFix
         public static ConfigEntry<bool> bSkipOpeningMovie;
         public static ConfigEntry<bool> bDisableCursor;
         public static ConfigEntry<bool> bSpannedUI;
+        public static ConfigEntry<float> fConversationWindowMulti;
         public static ConfigEntry<bool> bControllerGlyphs;
         public static ConfigEntry<int> iControllerStyle;
         public static ConfigEntry<float> fMoveSpeedMulti;
@@ -120,6 +121,12 @@ namespace HundredHeroesFix
                                 "Enabled",
                                 false,
                                 "Set to true to allow parts of the UI to remain spanned (to the edges of the screen). Note that this may cause visual issues.");
+
+            fConversationWindowMulti = Config.Bind("Conversation Window Size",
+                    "ConversationWindowSize",
+                    1f,
+                    new ConfigDescription("Set conversation window size multiplier. Higher values increase dialog window and conversation font size. Default = 1, Steam Deck Reccomendation = 1.16 \nHero Portraits on the left edge of screen may be slightly cut off depending on the chosen value.",
+                    new AcceptableValueRange<float>(1f, 2f)));
 
             bControllerGlyphs = Config.Bind("Force Controller Icons",
                                 "Enabled",
@@ -307,6 +314,11 @@ namespace HundredHeroesFix
             {
                 Cursor.visible = false;
                 Log.LogInfo($"Disabled mouse cursor visibility.");
+            }
+            if (fConversationWindowMulti.Value > 1.0f)
+            {
+                Harmony.CreateAndPatchAll(typeof(ConversationWindowPatch));
+                Log.LogInfo($"Patches: Applying conversation window size patch.");
             }
         }
 
@@ -1083,6 +1095,18 @@ namespace HundredHeroesFix
             {
                 Log.LogInfo($"Move Speed: Changed player BaseSpeedRate from {__instance._baseSpeedRate} to {__instance._baseSpeedRate * fMoveSpeedMulti.Value}");
                 __instance._baseSpeedRate *= fMoveSpeedMulti.Value;
+            }
+        }
+
+        [HarmonyPatch]
+        public class ConversationWindowPatch
+        {
+            // Increase size of conversation window
+            [HarmonyPatch(typeof(Scenario.UI.UIConversationGroup), nameof(Scenario.UI.UIConversationGroup.Initialize))]
+            [HarmonyPostfix]
+            public static void SetTextSize(Scenario.UI.UIConversationGroup __instance)
+            {
+                __instance.GetComponent<RectTransform>().localScale = new Vector3(fConversationWindowMulti.Value, fConversationWindowMulti.Value, 1f);
             }
         }
     }
