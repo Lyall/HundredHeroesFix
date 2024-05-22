@@ -123,10 +123,10 @@ namespace HundredHeroesFix
                                 "Set to true to allow parts of the UI to remain spanned (to the edges of the screen). Note that this may cause visual issues.");
 
             fConversationWindowMulti = Config.Bind("Conversation Window Size",
-                    "ConversationWindowSize",
-                    1f,
-                    new ConfigDescription("Set conversation window size multiplier. Higher values increase dialog window and conversation font size. Default = 1, Steam Deck Reccomendation = 1.16 \nHero Portraits on the left edge of screen may be slightly cut off depending on the chosen value.",
-                    new AcceptableValueRange<float>(1f, 2f)));
+                                "ConversationWindowSize",
+                                1f,
+                                new ConfigDescription("Set conversation window size multiplier. Higher values increase dialog window and conversation font size. Default = 1, Steam Deck Recommendation = 1.16 \nHero Portraits on the left edge of screen may be slightly cut off depending on the chosen value.",
+                                new AcceptableValueRange<float>(1f, 2f)));
 
             bControllerGlyphs = Config.Bind("Force Controller Icons",
                                 "Enabled",
@@ -1104,7 +1104,7 @@ namespace HundredHeroesFix
             // Increase size of conversation window
             [HarmonyPatch(typeof(Scenario.UI.UIConversationGroup), nameof(Scenario.UI.UIConversationGroup.Initialize))]
             [HarmonyPostfix]
-            public static void SetTextSize(Scenario.UI.UIConversationGroup __instance)
+            public static void SetConversationWindowSize(Scenario.UI.UIConversationGroup __instance)
             {
                 __instance.GetComponent<RectTransform>().localScale = new Vector3(fConversationWindowMulti.Value, fConversationWindowMulti.Value, 1f);
             }
