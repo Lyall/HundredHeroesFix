@@ -53,6 +53,7 @@ namespace HundredHeroesFix
         public static ConfigEntry<bool> bDisableChromaticAberration;
         public static ConfigEntry<bool> bDisableVignette;
         public static ConfigEntry<bool> bDisableColorGrading;
+        public static ConfigEntry<bool> bDisableBloom;
 
         // Aspect Ratio
         public static float fAspectRatio;
@@ -231,7 +232,7 @@ namespace HundredHeroesFix
             bDisableChromaticAberration = Config.Bind("Graphical Tweaks",
                                 "DisableChromaticAberration",
                                 false,
-                                "Set to true to disable chromatic abberation (color fringing at edges of screen).");
+                                "Set to true to disable chromatic aberration (color fringing at edges of screen).");
 
             bDisableVignette = Config.Bind("Graphical Tweaks",
                                 "DisableVignette",
@@ -242,6 +243,11 @@ namespace HundredHeroesFix
                                 "DisableColorGrading",
                                 false,
                                 "Set to true to disable color grading.");
+
+            bDisableBloom = Config.Bind("Graphical Tweaks",
+                                "DisableBloom",
+                                false,
+                                "Set to true to disable Bloom.");
 
             // Calculate aspect ratio
             fAspectRatio = (float)iCustomResX.Value / iCustomResY.Value;
@@ -1053,6 +1059,16 @@ namespace HundredHeroesFix
             [HarmonyPostfix]
             public static void PostProcessTweaks(UnityEngine.Rendering.Volume __instance)
             {
+                if (bDisableBloom.Value)
+                {
+                    __instance.profile.TryGet(out UnityEngine.Rendering.Universal.Bloom bloom);
+                    if (bloom)
+                    {
+                        bloom.active = false;
+                        Log.LogInfo($"Graphical Tweaks: Disabled bloom on {__instance.gameObject.name}.");
+                    }
+                }
+
                 if (bDisableColorGrading.Value)
                 {
                     __instance.profile.TryGet(out UnityEngine.Rendering.Universal.ColorCurves colorCurves);
