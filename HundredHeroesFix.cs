@@ -55,6 +55,9 @@ namespace HundredHeroesFix
         public static ConfigEntry<bool> bDisableColorGrading;
         public static ConfigEntry<bool> bDisableBloom;
 
+        // Minimap Tweaks
+        public static ConfigEntry<bool> bFixMinimap;
+
         // Aspect Ratio
         public static float fAspectRatio;
         public static float fAspectMultiplier;
@@ -249,6 +252,11 @@ namespace HundredHeroesFix
                                 false,
                                 "Set to true to disable Bloom.");
 
+            bFixMinimap = Config.Bind("MiniMap",
+                                "FixNorth",
+                                true,
+                                "Set to true to fix minimap's North.");
+
             // Calculate aspect ratio
             fAspectRatio = (float)iCustomResX.Value / iCustomResY.Value;
             fAspectMultiplier = fAspectRatio / fNativeAspect;
@@ -280,6 +288,8 @@ namespace HundredHeroesFix
             Harmony.CreateAndPatchAll(typeof(ResolutionPatch));
             Log.LogInfo($"Patches: Applying miscellaneous patch.");
             Harmony.CreateAndPatchAll(typeof(MiscPatch));
+            Log.LogInfo($"Patches: Applying minimap patch.");
+            Harmony.CreateAndPatchAll(typeof(MinimapPatch));
 
             if (fAspectRatio != fNativeAspect)
             {
@@ -1123,6 +1133,19 @@ namespace HundredHeroesFix
             public static void SetConversationWindowSize(Scenario.UI.UIConversationGroup __instance)
             {
                 __instance.GetComponent<RectTransform>().localScale = new Vector3(fConversationWindowMulti.Value, fConversationWindowMulti.Value, 1f);
+            }
+        }
+
+        [HarmonyPatch]
+        public class MinimapPatch
+        {
+            // Fixes minimap's north
+            [HarmonyPatch(typeof(FieldStage.UI.Minimap.UIMinimap), nameof(FieldStage.UI.Minimap.UIMinimap.Awake))]
+            [HarmonyPostfix]
+            public static void FixedMinimap(FieldStage.UI.Minimap.UIMinimap __instance)
+            {
+                Log.LogInfo($"Minimap North Fixed: {(bFixMinimap.Value ? "Enabled" : "Disabled")}.");
+                __instance._isLock = bFixMinimap.Value;
             }
         }
     }
